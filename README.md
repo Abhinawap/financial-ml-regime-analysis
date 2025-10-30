@@ -293,9 +293,6 @@ Potential extensions left for future research:
 ## 📖 References
 
 1. López de Prado, M. (2018). *Advances in Financial Machine Learning*. Wiley.
-2. Dixon, M., Halperin, I., & Bilokon, P. (2020). *Machine Learning in Finance: From Theory to Practice*. Springer.
-3. Jansen, S. (2020). *Machine Learning for Algorithmic Trading* (2nd ed.). Packt Publishing.
-
 ---
 
 ## 📄 License
