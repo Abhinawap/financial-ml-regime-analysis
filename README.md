@@ -314,7 +314,7 @@ Computer Science Student | University of Birmingham
 
 - 📧 Email: [abhinawap@hotmail.com]
 - 💼 LinkedIn: [Bambang Abhinawa Pinakasakti](https://www.linkedin.com/in/bambang-abhinawa-pinakasakti-6955092b4/)
-- 🐙 GitHub: [@Abhinawap](https://github.com/yourusername)
+- 🐙 GitHub: [@Abhinawap](https://github.com/Abhinawap)
 
 ---
 
