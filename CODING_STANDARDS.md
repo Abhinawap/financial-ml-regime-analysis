@@ -2,6 +2,10 @@
 
 Judgement calls for the reviewer. Mechanical rules are enforced by `tests/test_architecture.py`, ruff and vulture (`pyproject.toml`), not here.
 
+## Spec
+
+- **Undefined behaviour ships with an amendment.** Behaviour the spec leaves undefined (a fallback, a skipped step) needs a matching dated amendment comment on #1, not just a PR description.
+
 ## Settings
 
 - **Tunables live in `Settings`.** Any value a ticket, ablation or stress could change (barriers, horizon, costs, seeds, windows, thresholds, bootstrap parameters, the CI level) is read from `backtest/settings.py`.
