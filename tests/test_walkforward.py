@@ -6,6 +6,7 @@ import pandas as pd
 import pytest
 from sklearn.base import BaseEstimator
 
+from backtest.baselines import baselines
 from backtest.features import (
     CLUSTERED_LEVEL,
     CLUSTERED_STATIONARY,
@@ -250,3 +251,18 @@ def test_meta_ablation_runs_end_to_end_with_default_models():
     s = dataclasses.replace(SMALL, meta_n_estimators=5, meta_max_depth=2)
     res = walk_forward(prices(300), V1_STYLE, seed=42, settings=s, meta=True)
     assert res.returns.notna().all() and res.predictions.isin([-1, 0, 1]).all()
+
+
+def test_meta_skips_a_window_with_no_out_of_fold_long_calls_and_keeps_the_base_calls():
+    p = prices(300)
+    p[["Open", "High", "Low", "Close"]] = p[["Open", "High", "Low", "Close"]].mul(0.998 ** np.arange(300), axis=0)
+    s = dataclasses.replace(SMALL, meta_n_estimators=5, meta_max_depth=2)
+    base, meta = run(p, settings=s), run(p, settings=s, meta=True)
+    pd.testing.assert_series_equal(meta.predictions, base.predictions)
+
+
+def test_baselines_cover_the_same_dates_as_the_walk_forward_series():
+    p = prices(300)
+    idx = run(p).returns.index
+    for r in baselines(p, idx, SMALL).values():
+        assert (r.returns.index[0], r.returns.index[-1]) == (idx[0], idx[-1])

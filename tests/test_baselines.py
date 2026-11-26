@@ -35,7 +35,8 @@ def test_signals_use_only_data_up_to_the_signal_day():
         pd.testing.assert_series_equal(a[k].position[cut], b[k].position[cut])
 
 
-def test_momentum_goes_long_after_a_60_day_rise():
-    close = pd.Series(np.linspace(100, 200, 120), index=pd.bdate_range("2020-01-01", periods=120))
-    r = baselines(close.to_frame("Close"), close.index[60:], S)["momentum"]
+def test_momentum_goes_long_after_a_lookback_rise():
+    n = 2 * S.momentum_lookback
+    close = pd.Series(np.linspace(100, 200, n), index=pd.bdate_range("2020-01-01", periods=n))
+    r = baselines(close.to_frame("Close"), close.index[S.momentum_lookback:], S)["momentum"]
     assert r.position.iloc[1] == 1

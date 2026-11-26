@@ -7,8 +7,8 @@ import pandas as pd
 from xgboost import XGBClassifier
 
 from backtest.features import Arm, lag_columns
-from backtest.selection import CLASSES as _CLASSES
 from backtest.selection import (
+    CLASSES,
     fit_all_classes,
     primary_model,
     purged_splitter,
@@ -65,19 +65,23 @@ def walk_forward(prices: pd.DataFrame, arm: Arm, seed: int, settings: Settings, 
         Xt, yt = X.iloc[start : test - settings.purge_length], y.iloc[start : test - settings.purge_length]
         cols = select_features(Xt, yt, settings, seed, outside, model)
         Xs = Xt[cols]
-        codes = np.searchsorted(_CLASSES, yt)
-        m = fit_all_classes(model, Xs, codes, len(_CLASSES))
+        codes = np.searchsorted(CLASSES, yt)
+        m = fit_all_classes(model, Xs, codes, len(CLASSES))
         proba = m.predict_proba(X.iloc[test:end][cols])
-        pred = _CLASSES[proba.argmax(axis=1)]
+        pred = CLASSES[proba.argmax(axis=1)]
         if meta:
             # Out-of-fold primary probabilities: each validation fold is predicted by a model that never saw it.
+            # Limit: feature selection ran on the whole window (labels included) before these predictions, so
+            # selection, not the fold models' parameters, has seen the predicted rows.
             folds = list(purged_splitter(settings).split(Xs))
-            oof = np.vstack([fit_all_classes(model, Xs.iloc[tr], codes[tr], len(_CLASSES)).predict_proba(Xs.iloc[va])
+            oof = np.vstack([fit_all_classes(model, Xs.iloc[tr], codes[tr], len(CLASSES)).predict_proba(Xs.iloc[va])
                              for tr, va in folds])
             val = np.concatenate([va for _, va in folds])
-            calls = _CLASSES[oof.argmax(axis=1)] == 1
-            mm = fit_all_classes(meta_model, pd.DataFrame(oof[calls]), (yt.to_numpy()[val][calls] == 1).astype(int), 2)
-            pred[(pred == 1) & (mm.predict_proba(pd.DataFrame(proba))[:, 1] < settings.meta_threshold)] = 0
+            calls = CLASSES[oof.argmax(axis=1)] == 1
+            if calls.any():  # no out-of-fold +1 calls: skip the meta step, keep the window's +1 calls as the base run
+                meta_fit = fit_all_classes(meta_model, pd.DataFrame(oof[calls]),
+                                           (yt.to_numpy()[val][calls] == 1).astype(int), 2)
+                pred[(pred == 1) & (meta_fit.predict_proba(pd.DataFrame(proba))[:, 1] < settings.meta_threshold)] = 0
         preds.append(pd.Series(pred, index=X.index[test:end]))
         fingerprint = hashlib.sha256(str(list(Xt.columns)).encode() + Xt.to_numpy().tobytes() + yt.to_numpy().tobytes())
         windows.append((X.index[start], X.index[test - 1], X.index[test], X.index[end - 1], fingerprint.hexdigest(),
