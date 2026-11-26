@@ -42,7 +42,7 @@ def cluster_representatives(X: pd.DataFrame, settings: Settings, outside: Sequen
     return [c for c in X.columns if c in keep]
 
 
-def _primary_model(settings: Settings) -> XGBClassifier:
+def primary_model(settings: Settings) -> XGBClassifier:
     return XGBClassifier(
         objective=settings.primary_objective,
         n_estimators=settings.primary_n_estimators,
@@ -50,6 +50,18 @@ def _primary_model(settings: Settings) -> XGBClassifier:
         learning_rate=settings.primary_learning_rate,
         random_state=settings.model_seed,
     )
+
+
+def fit_all_classes(model, X: pd.DataFrame, codes: np.ndarray, n_classes: int):
+    """Fit a clone of `model` on class codes 0..n_classes-1, even if some are missing from `codes`.
+
+    XGBoost needs every class present to size its output, so one zero-weight row is added per missing class.
+    """
+    missing = np.setdiff1d(np.arange(n_classes), codes)
+    Xt = pd.concat([X, X.iloc[np.zeros(len(missing), dtype=int)]])
+    yt = np.concatenate([codes, missing])
+    w = np.concatenate([np.ones(len(codes)), np.zeros(len(missing))])
+    return clone(model).fit(Xt, yt, sample_weight=w)
 
 
 def mda_importance(
@@ -60,20 +72,14 @@ def mda_importance(
     Uses the purged splitter; the permutation shuffle is drawn from `seed`. `model` defaults to the
     primary XGBoost classifier (override with a small one in tests).
     """
-    model = _primary_model(settings) if model is None else model
+    model = primary_model(settings) if model is None else model
     rng = np.random.default_rng(seed)
     classes = np.unique(y)
     codes = np.searchsorted(classes, np.asarray(y))
     drops = np.zeros(X.shape[1])
     n_runs = 0
     for train, val in purged_splitter(settings).split(X):
-        # A fold's train rows can miss a class, and XGBoost needs every class present to size its output.
-        # Add one zero-weight row per missing class so the model always trains on all classes (fixed codes).
-        missing = np.setdiff1d(np.arange(len(classes)), codes[train])
-        Xt = pd.concat([X.iloc[train], X.iloc[train[:1]].iloc[np.zeros(len(missing), dtype=int)]])
-        yt = np.concatenate([codes[train], missing])
-        w = np.concatenate([np.ones(len(train)), np.zeros(len(missing))])
-        m = clone(model).fit(Xt, yt, sample_weight=w)
+        m = fit_all_classes(model, X.iloc[train], codes[train], len(classes))
 
         def loss(Xv):
             return log_loss(codes[val], m.predict_proba(Xv), labels=range(len(classes)))
