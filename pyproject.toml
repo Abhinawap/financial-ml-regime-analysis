@@ -1,0 +1,26 @@
+[project]
+name = "financial-ml-regime-analysis"
+version = "0.1.0"
+requires-python = "==3.12.11"
+dependencies = [
+    "numpy",
+    "pandas==2.3.3",
+    "scipy",
+    "scikit-learn",
+    "xgboost",
+    "matplotlib",
+    "seaborn",
+    "plotly",
+    "pandas-ta-classic",
+    "jupyter",
+]
+
+[dependency-groups]
+dev = ["pytest"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
