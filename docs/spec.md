@@ -1,4 +1,4 @@
-> Copy of the v2 spec from [#1](https://github.com/Abhinawap/financial-ml-regime-analysis/issues/1). **#1 is the original**; if they disagree, #1 wins. This copy includes the amendment recorded in #1's comments.
+> Copy of the v2 spec from [#1](https://github.com/Abhinawap/financial-ml-regime-analysis/issues/1). **#1 is the original**; if they disagree, #1 wins. This copy includes the amendments recorded in #1's comments.
 
 > **Pre-registration.** This spec fixes the analysis plan, every free setting and the readings of the result before any v2 out-of-sample run. Terms follow `GLOSSARY.md`. The facts behind the cost and short-selling decisions are in `docs/research/idx-trading-frictions.md`.
 
@@ -284,3 +284,10 @@ All readings use the **primary pair** (the v1-style arm against the stationary t
 ## Amendment (from #1's comments)
 
 **Amendment, 2026-11-26, before development.** The spec has the v2 notebook run every arm and seed. Instead, one results command runs all arms, seeds, the meta-labelling ablation and the baselines, and saves the per-seed daily return series, trade logs, per-window fingerprints and selected features to files. The notebook only reads those files. A plotting fix after the official run then needs no model rerun and no deviation entry. Nothing else in the spec changes. The in-repo copy of the spec includes this amendment.
+
+## Amendment 2 (from #1's comments)
+
+**Amendment, 2026-11-26, during development, before the official run.** Two additions to the meta-labelling ablation. Nothing else in the spec changes.
+
+- **Fallback for a window with no meta-model.** If a training window's out-of-fold predictions contain no +1 call, the meta-model has nothing to train on. That window skips the meta step and trades its +1 calls as the base run does. Vetoing them instead would make the meta run differ from the base run with no meta-model involved, and the ablation measures the meta-model. About 190 out-of-fold +1 calls per window are expected, so the fallback should not fire on KEEN. Each window records `oof_long_calls`, the number of out-of-fold +1 calls, and the README reports how many windows used the fallback.
+- **Added limitation, next to "meta fold models weaker than the deployed model":** feature selection runs on the whole training window, labels included, before the out-of-fold predictions. The fold models never see the rows they predict, but the selected features were chosen with those rows' labels, so the out-of-fold probabilities the meta-model trains on look slightly better than the deployed model's. Test-window rows are never involved, so no reported return is affected. Selecting inside each fold, on about 100 rows, would be noisier than the leak.
