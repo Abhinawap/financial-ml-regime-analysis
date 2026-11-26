@@ -259,6 +259,8 @@ def test_meta_skips_a_window_with_no_out_of_fold_long_calls_and_keeps_the_base_c
     s = dataclasses.replace(SMALL, meta_n_estimators=5, meta_max_depth=2)
     base, meta = run(p, settings=s), run(p, settings=s, meta=True)
     pd.testing.assert_series_equal(meta.predictions, base.predictions)
+    assert (meta.windows["oof_long_calls"] == 0).any()
+    assert base.windows["oof_long_calls"].isna().all()
 
 
 def test_baselines_cover_the_same_dates_as_the_walk_forward_series():

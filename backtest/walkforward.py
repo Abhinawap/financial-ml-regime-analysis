@@ -36,7 +36,8 @@ class WalkForwardResult:
     predictions: pd.Series  # continuous prediction series (-1/0/+1), same index
     trades: pd.DataFrame  # simulator trade log
     # train_start, train_end (last window row, before purge), test_start, test_end, fingerprint,
-    # features (tuple of the window's selected columns)
+    # features (tuple of the window's selected columns), oof_long_calls (out-of-fold +1 calls the meta-model
+    # trained on; 0 means the meta step was skipped; NaN with meta off)
     windows: pd.DataFrame
 
 
@@ -69,6 +70,7 @@ def walk_forward(prices: pd.DataFrame, arm: Arm, seed: int, settings: Settings, 
         m = fit_all_classes(model, Xs, codes, len(CLASSES))
         proba = m.predict_proba(X.iloc[test:end][cols])
         pred = CLASSES[proba.argmax(axis=1)]
+        oof_long_calls = np.nan
         if meta:
             # Out-of-fold primary probabilities: each validation fold is predicted by a model that never saw it.
             # Limit: feature selection ran on the whole window (labels included) before these predictions, so
@@ -78,6 +80,7 @@ def walk_forward(prices: pd.DataFrame, arm: Arm, seed: int, settings: Settings, 
                              for tr, va in folds])
             val = np.concatenate([va for _, va in folds])
             calls = CLASSES[oof.argmax(axis=1)] == 1
+            oof_long_calls = int(calls.sum())
             if calls.any():  # no out-of-fold +1 calls: skip the meta step, keep the window's +1 calls as the base run
                 meta_fit = fit_all_classes(meta_model, pd.DataFrame(oof[calls]),
                                            (yt.to_numpy()[val][calls] == 1).astype(int), 2)
@@ -85,9 +88,9 @@ def walk_forward(prices: pd.DataFrame, arm: Arm, seed: int, settings: Settings, 
         preds.append(pd.Series(pred, index=X.index[test:end]))
         fingerprint = hashlib.sha256(str(list(Xt.columns)).encode() + Xt.to_numpy().tobytes() + yt.to_numpy().tobytes())
         windows.append((X.index[start], X.index[test - 1], X.index[test], X.index[end - 1], fingerprint.hexdigest(),
-                        tuple(cols)))
+                        tuple(cols), oof_long_calls))
     predictions = pd.concat(preds)
     sim = simulate(prices["Close"], predictions, settings)
     return WalkForwardResult(sim.returns[predictions.index], sim.position[predictions.index], predictions, sim.trades,
                              pd.DataFrame(windows, columns=["train_start", "train_end", "test_start", "test_end",
-                                                            "fingerprint", "features"]))
+                                                            "fingerprint", "features", "oof_long_calls"]))
