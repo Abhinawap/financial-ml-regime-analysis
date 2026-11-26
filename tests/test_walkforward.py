@@ -270,6 +270,17 @@ def test_meta_skips_a_window_with_no_out_of_fold_long_calls_and_keeps_the_base_c
     assert base.windows["oof_long_calls"].isna().all()
 
 
+# Lopsided windows (a missing label class, no timeouts, no +1 calls) crashed three separate code paths.
+@pytest.mark.parametrize("drift", [0.002, 0.0, -0.002])
+@pytest.mark.parametrize("arm", [V1_STYLE, STATIONARY_TWIN, CLUSTERED_LEVEL, CLUSTERED_STATIONARY])
+@pytest.mark.parametrize("meta", [False, True])
+def test_every_arm_completes_on_up_flat_and_down_drift(drift, arm, meta):
+    p = prices(300)
+    p[["Open", "High", "Low", "Close"]] = p[["Open", "High", "Low", "Close"]].mul((1 + drift) ** np.arange(300), axis=0)
+    s = dataclasses.replace(SMALL, meta_n_estimators=5, meta_max_depth=2)
+    walk_forward(p, arm, seed=42, settings=s, meta=meta)
+
+
 def test_baselines_cover_the_same_dates_as_the_walk_forward_series():
     p = prices(300)
     idx = run(p).returns.index

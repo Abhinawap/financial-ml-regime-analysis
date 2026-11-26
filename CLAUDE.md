@@ -15,3 +15,7 @@ Single-context: `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents
 ### Coding standards
 
 Reviewers enforce `CODING_STANDARDS.md`. Mechanical rules live in `tests/test_architecture.py`, ruff and vulture (`pyproject.toml`).
+
+### Spec
+
+`docs/spec.md` is a copy of #1. Behaviour the spec doesn't define goes on #1 as a dated amendment comment, copied word for word into `docs/spec.md` before merge.
