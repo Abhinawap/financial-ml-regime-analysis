@@ -14,4 +14,4 @@ Single-context: `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents
 
 ### Coding standards
 
-Reviewers enforce `CODING_STANDARDS.md`. Mechanical rules live in `tests/test_architecture.py`.
+Reviewers enforce `CODING_STANDARDS.md`. Mechanical rules live in `tests/test_architecture.py`, ruff and vulture (`pyproject.toml`).

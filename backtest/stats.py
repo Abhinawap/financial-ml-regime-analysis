@@ -4,6 +4,7 @@ import pandas as pd
 
 from backtest.settings import Settings
 
+
 def sharpe(returns, settings: Settings, axis=None) -> float:
     """Annualised Sharpe of daily returns, risk-free rate zero."""
     r = np.asarray(returns, dtype=float)

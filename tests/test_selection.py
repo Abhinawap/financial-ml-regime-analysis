@@ -4,7 +4,12 @@ import numpy as np
 import pandas as pd
 from xgboost import XGBClassifier
 
-from backtest.selection import cluster_representatives, mda_importance, purged_splitter, select_features
+from backtest.selection import (
+    cluster_representatives,
+    mda_importance,
+    purged_splitter,
+    select_features,
+)
 from backtest.settings import Settings
 
 S = Settings()
