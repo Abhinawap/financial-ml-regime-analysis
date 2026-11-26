@@ -12,6 +12,8 @@ from xgboost import XGBClassifier
 
 from backtest.settings import Settings
 
+CLASSES = np.array([-1, 0, 1])  # triple-barrier label of each fixed class code
+
 
 def purged_splitter(settings: Settings) -> TimeSeriesSplit:
     """Time-series splitter that drops `purge_length` training rows before each validation fold."""
@@ -74,15 +76,14 @@ def mda_importance(
     """
     model = primary_model(settings) if model is None else model
     rng = np.random.default_rng(seed)
-    classes = np.unique(y)
-    codes = np.searchsorted(classes, np.asarray(y))
+    codes = np.searchsorted(CLASSES, np.asarray(y))
     drops = np.zeros(X.shape[1])
     n_runs = 0
     for train, val in purged_splitter(settings).split(X):
-        m = fit_all_classes(model, X.iloc[train], codes[train], len(classes))
+        m = fit_all_classes(model, X.iloc[train], codes[train], len(CLASSES))
 
         def loss(Xv):
-            return log_loss(codes[val], m.predict_proba(Xv), labels=range(len(classes)))  # noqa: B023 (used only this iteration)
+            return log_loss(codes[val], m.predict_proba(Xv), labels=range(len(CLASSES)))  # noqa: B023 (used only this iteration)
 
         Xv = X.iloc[val].copy()
         base = loss(Xv)

@@ -126,3 +126,9 @@ def test_mda_default_model_handles_a_training_fold_missing_a_class():
     s = dataclasses.replace(S, primary_n_estimators=5)
     imp = mda_importance(X, y, s, seed=42)
     assert set(imp.index) == {"a", "b", "c"} and np.isfinite(imp).all()
+
+
+def test_mda_default_model_handles_a_window_missing_a_class_entirely():
+    X, y = _signal_data()  # labels in {-1, +1}: no timeouts anywhere
+    imp = mda_importance(X, y, dataclasses.replace(S, primary_n_estimators=5), seed=42)
+    assert imp.index[0] == "sig" and np.isfinite(imp).all()

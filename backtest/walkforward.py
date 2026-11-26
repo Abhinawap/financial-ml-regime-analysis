@@ -1,16 +1,15 @@
 """Seam A: the walk-forward run, plus the triple-barrier labels it trains on."""
 import hashlib
-from collections.abc import Callable
 from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
 
-from backtest.selection import fit_all_classes, primary_model
+from backtest.features import Arm, lag_columns
+from backtest.selection import CLASSES as _CLASSES
+from backtest.selection import fit_all_classes, primary_model, select_features
 from backtest.settings import Settings
 from backtest.simulator import first_barrier, simulate
-
-_CLASSES = np.array([-1, 0, 1])  # label of each fixed class code
 
 
 def triple_barrier_labels(close: pd.Series, settings: Settings) -> pd.Series:
@@ -30,18 +29,20 @@ class WalkForwardResult:
     position: pd.Series  # position after each close, same index
     predictions: pd.Series  # continuous prediction series (-1/0/+1), same index
     trades: pd.DataFrame  # simulator trade log
-    windows: pd.DataFrame  # train_start, train_end (last window row, before purge), test_start, test_end, fingerprint
+    # train_start, train_end (last window row, before purge), test_start, test_end, fingerprint,
+    # features (tuple of the window's selected columns)
+    windows: pd.DataFrame
 
 
-def walk_forward(prices: pd.DataFrame, features: Callable[[pd.DataFrame, Settings], pd.DataFrame],
-                 seed: int, settings: Settings, model=None) -> WalkForwardResult:
+def walk_forward(prices: pd.DataFrame, arm: Arm, seed: int, settings: Settings, model=None) -> WalkForwardResult:
     """Retrain on each purged training window, predict its test window, simulate one continuous series.
 
-    Every column of `features(prices, settings)` is used. `seed` is accepted for per-window feature
-    selection (issue #8) and unused for now. `model` defaults to the primary XGBoost classifier.
+    Each window selects its features from `arm`'s feature form on its own purged rows; `seed` drives the
+    MDA shuffle. `model` defaults to the primary XGBoost classifier and is used for selection and prediction.
     """
     model = primary_model(settings) if model is None else model
-    X = features(prices, settings)
+    X = arm.features(prices, settings)
+    outside = lag_columns(settings) if arm.lags_outside_clustering else []
     y = triple_barrier_labels(prices["Close"], settings)
     n, first = len(prices), int(np.argmax(X.notna().all(axis=1).to_numpy()))
     preds, windows = [], []
@@ -50,12 +51,15 @@ def walk_forward(prices: pd.DataFrame, features: Callable[[pd.DataFrame, Setting
         end = min(test + settings.test_rows, n)
         # Purge: drop the last rows, whose labels read closes past the window's last row.
         Xt, yt = X.iloc[start : test - settings.purge_length], y.iloc[start : test - settings.purge_length]
-        m = fit_all_classes(model, Xt, np.searchsorted(_CLASSES, yt), len(_CLASSES))
-        preds.append(pd.Series(_CLASSES[m.predict_proba(X.iloc[test:end]).argmax(axis=1)], index=X.index[test:end]))
+        cols = select_features(Xt, yt, settings, seed, outside, model)
+        m = fit_all_classes(model, Xt[cols], np.searchsorted(_CLASSES, yt), len(_CLASSES))
+        preds.append(pd.Series(_CLASSES[m.predict_proba(X.iloc[test:end][cols]).argmax(axis=1)],
+                               index=X.index[test:end]))
         fingerprint = hashlib.sha256(str(list(Xt.columns)).encode() + Xt.to_numpy().tobytes() + yt.to_numpy().tobytes())
-        windows.append((X.index[start], X.index[test - 1], X.index[test], X.index[end - 1], fingerprint.hexdigest()))
+        windows.append((X.index[start], X.index[test - 1], X.index[test], X.index[end - 1], fingerprint.hexdigest(),
+                        tuple(cols)))
     predictions = pd.concat(preds)
     sim = simulate(prices["Close"], predictions, settings)
     return WalkForwardResult(sim.returns[predictions.index], sim.position[predictions.index], predictions, sim.trades,
                              pd.DataFrame(windows, columns=["train_start", "train_end", "test_start", "test_end",
-                                                            "fingerprint"]))
+                                                            "fingerprint", "features"]))
