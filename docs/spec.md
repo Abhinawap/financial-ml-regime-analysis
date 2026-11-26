@@ -148,7 +148,7 @@ All readings use the **primary pair** (the v1-style arm against the stationary t
 
 ### Features and arms
 
-- **The feature universe is everything v1 used**: raw OHLCV, the 36 technical indicators, and 30 close lags. This includes `Open`, `High`, `Low`, `Close` and `Volume`, which v1 fed to the model because it selected every non-label column.
+- **The feature universe is everything v1 used**: v1's 36 technical indicators (31 computed indicators plus raw OHLCV, as v1 counted them) and 30 close lags: 66 columns. This includes `Open`, `High`, `Low`, `Close` and `Volume`, which v1 fed to the model because it selected every non-label column.
 - **Level form** is the features as v1 used them.
 - **Stationary form** replaces each level with a scale-free version. The relative information stays and the absolute price and volume level goes, and that removal is what the comparison tests.
 
