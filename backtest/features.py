@@ -1,4 +1,7 @@
-"""Feature universe in level form (as v1 used it) and stationary form (scale-free)."""
+"""Feature universe in level form (as v1 used it) and stationary form (scale-free), and the four arms."""
+from collections.abc import Callable
+from dataclasses import dataclass
+
 import numpy as np
 import pandas as pd
 import pandas_ta_classic as ta
@@ -49,6 +52,10 @@ def level_features(prices: pd.DataFrame, settings: Settings) -> pd.DataFrame:
     return f
 
 
+def lag_columns(settings: Settings) -> list[str]:
+    return [f"lag_{k}" for k in range(1, settings.n_lags + 1)]
+
+
 _PRICE_LEVEL = ["Open", "High", "Low", "bb_mid", "bb_hi", "bb_lo", "kc_upper", "kc_Lower",
                 "ema_8", "ema_21", "sma_50", "vwap"]
 _SPREADS = ["macd", "macd_signal", "macd_hist", "atr"]
@@ -59,7 +66,7 @@ def stationary_features(prices: pd.DataFrame, settings: Settings) -> pd.DataFram
     f = level_features(prices, settings)
     c, v = f["Close"], f["Volume"]
     s = f.drop(columns="Close")
-    price_level = _PRICE_LEVEL + [f"lag_{k}" for k in range(1, settings.n_lags + 1)]
+    price_level = _PRICE_LEVEL + lag_columns(settings)
     s[price_level] = np.log(f[price_level].div(c, axis=0))
     s[_SPREADS] = f[_SPREADS].div(c, axis=0)
     vol_sum = v.rolling(settings.cum_window).sum()
@@ -69,3 +76,16 @@ def stationary_features(prices: pd.DataFrame, settings: Settings) -> pd.DataFram
     s["Volume"] = v / f["vol20"]
     s["vol20"] = s["Volume"]
     return s
+
+
+@dataclass(frozen=True)
+class Arm:
+    """A feature configuration: the feature form, and whether close lags bypass clustering."""
+    features: Callable[[pd.DataFrame, Settings], pd.DataFrame]
+    lags_outside_clustering: bool
+
+
+V1_STYLE = Arm(level_features, lags_outside_clustering=True)
+STATIONARY_TWIN = Arm(stationary_features, lags_outside_clustering=True)
+CLUSTERED_LEVEL = Arm(level_features, lags_outside_clustering=False)
+CLUSTERED_STATIONARY = Arm(stationary_features, lags_outside_clustering=False)
