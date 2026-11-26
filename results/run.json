@@ -1,0 +1,70 @@
+{
+  "official_run": true,
+  "rows": 1465,
+  "first_date": "2019-10-01",
+  "last_date": "2025-10-24",
+  "prices_sha256": "31a8fa083c754b2804c295465d2bae2d0399d68f77af13f8686457c2c40a5202",
+  "git": "v2-official-run",
+  "python": "3.12.11",
+  "platform": "Linux-6.18.58.1-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "packages": {
+    "numpy": "2.5.5",
+    "pandas": "2.3.3",
+    "scipy": "1.18.1",
+    "scikit-learn": "1.9.1",
+    "xgboost": "3.4.1",
+    "pandas-ta-classic": "0.9.0"
+  },
+  "settings": {
+    "upper_barrier": 0.02,
+    "lower_barrier": 0.02,
+    "horizon": 10,
+    "buy_cost_bps": 45.0,
+    "sell_cost_bps": 55.0,
+    "cost_stresses": [
+      [
+        70.0,
+        80.0
+      ],
+      [
+        95.0,
+        105.0
+      ]
+    ],
+    "train_rows": 600,
+    "test_rows": 120,
+    "step": 120,
+    "linkage": "ward",
+    "distance_threshold": 0.6,
+    "n_features": 15,
+    "n_splits": 5,
+    "n_permutation_repeats": 3,
+    "selection_seeds": [
+      42,
+      43,
+      44,
+      45,
+      46
+    ],
+    "primary_objective": "multi:softprob",
+    "primary_n_estimators": 200,
+    "primary_max_depth": 6,
+    "primary_learning_rate": 0.05,
+    "model_seed": 42,
+    "meta_n_estimators": 100,
+    "meta_max_depth": 4,
+    "meta_threshold": 0.5,
+    "meta_seed": 42,
+    "n_lags": 30,
+    "cum_window": 20,
+    "trading_days": 252,
+    "ci_alpha": 0.05,
+    "bootstrap_resamples": 10000,
+    "bootstrap_block_length": 10,
+    "bootstrap_seed": 0,
+    "momentum_lookback": 60,
+    "rsi_length": 14,
+    "rsi_entry_below": 30.0,
+    "reading3_boundary": "2024-01-01"
+  }
+}
