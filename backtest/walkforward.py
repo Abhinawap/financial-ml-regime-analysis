@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from backtest.selection import primary_model, fit_all_classes
+from backtest.selection import fit_all_classes, primary_model
 from backtest.settings import Settings
 from backtest.simulator import first_barrier, simulate
 

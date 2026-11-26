@@ -82,7 +82,7 @@ def mda_importance(
         m = fit_all_classes(model, X.iloc[train], codes[train], len(classes))
 
         def loss(Xv):
-            return log_loss(codes[val], m.predict_proba(Xv), labels=range(len(classes)))
+            return log_loss(codes[val], m.predict_proba(Xv), labels=range(len(classes)))  # noqa: B023 (used only this iteration)
 
         Xv = X.iloc[val].copy()
         base = loss(Xv)

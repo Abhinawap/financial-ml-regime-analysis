@@ -12,7 +12,7 @@ def level_features(prices: pd.DataFrame, settings: Settings) -> pd.DataFrame:
     Warm-up rows are NaN; callers drop them (v1 did dropna).
     """
     p = prices[["Open", "High", "Low", "Close", "Volume"]].astype("float64")
-    o, h, l, c, v = (p[k] for k in ["Open", "High", "Low", "Close", "Volume"])
+    h, l, c, v = (p[k] for k in ["High", "Low", "Close", "Volume"])
     f = p.copy()
     # Indicator lengths below are v1's feature definitions, fixed by the spec, not tunables.
     f["rsi"] = ta.rsi(c, length=14)

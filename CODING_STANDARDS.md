@@ -1,6 +1,6 @@
 # Coding standards
 
-Judgement calls for the reviewer. Mechanical rules are enforced by `tests/test_architecture.py`, not here.
+Judgement calls for the reviewer. Mechanical rules are enforced by `tests/test_architecture.py`, ruff and vulture (`pyproject.toml`), not here.
 
 ## Settings
 
@@ -10,3 +10,8 @@ Judgement calls for the reviewer. Mechanical rules are enforced by `tests/test_a
 ## Tests
 
 - **Every injectable default runs in at least one test.** A parameter like `model=None` that tests override for speed gets one test with the real default on tiny data. The default XGBoost path crashed on a fold missing a class because every test swapped in a smaller model.
+
+## Bloat
+
+- **No abstraction with one caller.** A helper, class or parameter needs a second caller or a spec requirement. Until it has one, inline it.
+- **Leakage safety beats brevity.** Purge, labels and window handover stay explicit even when a shorter form exists. A simplification there ships with a test that fails on lookahead.

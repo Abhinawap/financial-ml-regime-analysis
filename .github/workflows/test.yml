@@ -10,4 +10,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
       - run: uv sync --frozen
+      - run: uv run ruff check
+      - run: uv run vulture
       - run: uv run pytest

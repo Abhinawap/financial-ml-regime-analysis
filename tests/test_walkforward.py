@@ -88,7 +88,7 @@ class Stub(BaseEstimator):
     def __init__(self, last_long_t=-1):
         self.last_long_t = last_long_t
 
-    def fit(self, X, y, sample_weight=None):
+    def fit(self, X, y, sample_weight=None):  # noqa: V107 (sklearn signature)
         self.long_ = X["t"].max() <= self.last_long_t
         return self
 

@@ -16,7 +16,12 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["pytest"]
+dev = [
+    "pre-commit>=4.7.0",
+    "pytest",
+    "ruff>=0.17.6",
+    "vulture>=2.16",
+]
 
 [tool.uv]
 package = false
@@ -25,3 +30,17 @@ package = false
 testpaths = ["tests"]
 pythonpath = ["."]
 filterwarnings = ["error"]
+
+[tool.ruff]
+extend-exclude = ["notebook"]  # v1 notebook is a historical artifact, not linted
+
+[tool.ruff.lint]
+extend-select = ["C901"]
+ignore = ["E731", "E741"]  # test lambdas and OHLC's `l` are fine
+
+[tool.ruff.lint.mccabe]
+max-complexity = 12  # ponytail: ratchet at simulator._simulate's current 12; lower it when that splits
+
+[tool.vulture]
+paths = ["backtest", "tests"]
+min_confidence = 80  # dataclass fields score 60, so planned Settings fields are not flagged
