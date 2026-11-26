@@ -60,8 +60,12 @@ def walk_forward(prices: pd.DataFrame, arm: Arm, seed: int, settings: Settings, 
     outside = lag_columns(settings) if arm.lags_outside_clustering else []
     y = triple_barrier_labels(prices["Close"], settings)
     n, first = len(prices), int(np.argmax(X.notna().all(axis=1).to_numpy()))
+    starts = range(first, n - settings.train_rows, settings.step)
+    if not starts:
+        raise ValueError(f"too few rows ({n}) for one {settings.train_rows}-row training window after "
+                         f"{first} warm-up rows")
     preds, windows = [], []
-    for start in range(first, n - settings.train_rows, settings.step):
+    for start in starts:
         test = start + settings.train_rows
         end = min(test + settings.test_rows, n)
         # Purge: drop the last rows, whose labels read closes past the window's last row.
