@@ -96,6 +96,9 @@ A run that changes exactly one design choice against the main run, so a differen
 **Arm**:
 One feature configuration run through the whole walk-forward pipeline. Arms differ in the form of their features and in how close lags enter feature selection.
 
+**Feature universe**:
+Every column v1 fed the model: 31 computed indicators, raw OHLCV and 30 close lags, 66 columns in level form and 65 in stationary form (no `Close`). v1 and the spec call the 36 non-lag columns "the 36 technical indicators", counting OHLCV among them.
+
 **Level form**:
 Features with price and volume levels as v1 used them: raw OHLCV, raw close lags, bands, moving averages and cumulative volume.
 

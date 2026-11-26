@@ -1,5 +1,4 @@
 import dataclasses
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -178,10 +177,3 @@ def test_buy_and_hold_runs_on_development_rows():
     assert t.gross_return == pytest.approx(close.iloc[-1] / close.iloc[0] - 1)
     assert (1 + res.returns).prod() - 1 == pytest.approx(t.net_return)
 
-
-def test_barrier_function_is_the_only_barrier_logic():
-    pkg = Path(__file__).resolve().parent.parent / "backtest"
-    offenders = [p.name for p in pkg.glob("*.py")
-                 if p.name not in {"settings.py", "simulator.py"}
-                 and ("upper_barrier" in p.read_text() or "lower_barrier" in p.read_text())]
-    assert offenders == []

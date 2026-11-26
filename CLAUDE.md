@@ -11,3 +11,7 @@ Default five-role vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `
 ### Domain docs
 
 Single-context: `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+### Coding standards
+
+Reviewers enforce `CODING_STANDARDS.md`. Mechanical rules live in `tests/test_architecture.py`.

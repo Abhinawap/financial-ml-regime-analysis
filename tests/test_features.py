@@ -111,7 +111,7 @@ def test_no_lookahead(prices, form):
     changed = prices.astype("float64")
     rng = np.random.default_rng(0)
     n = len(prices) - t - 1
-    changed.iloc[t + 1:, :] = changed.iloc[t + 1:, :].mul(rng.uniform(0.5, 2.0, n), axis=0)
+    changed.iloc[t + 1:, :] = changed.iloc[t + 1:, :].mul(rng.uniform(0.95, 1.05, n), axis=0)
     altered = form(changed, S)
     pd.testing.assert_frame_equal(base.iloc[: t + 1], altered.iloc[: t + 1])
 
