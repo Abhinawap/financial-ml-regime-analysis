@@ -306,3 +306,10 @@ All readings use the **primary pair** (the v1-style arm against the stationary t
 
 - **Reading 1 direction.** When both gates pass, the better arm is the one gate 1 favours, given by the sign of the paired CI on the daily return difference. Reading 1 passes only if the gap in mean per-seed Sharpe points the same way. If the two gates favour different arms, the comparison is inconclusive.
 - **Reading 3 measure.** An arm beats or trails its exposure-matched benchmark according to its mean daily excess return over the early windows and over the late windows. Each window's benchmark is scaled by that window's average position, as in the per-window table. The spec gives no side to a window with exactly half its test days on each side of the boundary, so the notebook stops instead of picking one. Under the series rule, no window splits evenly.
+
+## Amendment 5 (from #1's comments)
+
+**Amendment, 2026-11-26, after the official run and after its outputs were read.** A presentation change. No reading, rule, setting or number changes.
+
+- **README lead figure.** The spec says the README leads with one figure showing the v1-style arm, the stationary twin and the exposure-matched benchmark. The README instead leads with a plot of each run's mean daily excess return and its 95% block-bootstrap interval, because reading 2 is the main finding and that plot shows its statistic directly. The spec's figure follows it, unchanged in content.
+- **The lead plot was designed after the results were read.** It shows the pre-registered excess-return statistic and adds no new analysis.

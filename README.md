@@ -1,33 +1,39 @@
 # Financial ML Regime Analysis
 
-A pre-registered walk-forward backtest of a machine-learning trading strategy on one Indonesian stock, PT Kencana Energi Lestari (KEEN.JK). It asks one question: **did the original version's out-of-sample failure come from its raw price-level features, or from a regime change?**
+**A pre-registered re-test of a trading model: it showed no detectable edge over its exposure-matched benchmark, so there was no edge for a regime change to break, and swapping raw price features for scale-free ones made no detectable difference.**
 
-![Out-of-sample equity curves of the headline arm, the stationary twin and their exposure-matched benchmarks](results/headline.png)
+![Forest plot: mean daily excess return with 95% CI for eight runs; every interval includes zero or lies below it](docs/img/excess_ci.svg)
 
-*Out-of-sample equity from 2022-06-06 to 2025-10-24, net of costs, each arm averaged over five feature-selection seeds. The headline arm is the v1-style arm: v1's features inside the corrected pipeline. Each arm's dashed line is its exposure-matched benchmark: buy-and-hold scaled by that arm's average position, with no costs.*
+*This plot was designed after the official outputs were read. It shows the pre-registered excess-return statistic and adds no new analysis ([Amendment 5](docs/spec.md#amendment-5-from-1s-comments)).* The readings were fixed in the [spec](docs/spec.md) before the official run, and the [v2 notebook](notebook/v2_analysis.ipynb) computes each outcome from those rules.
 
-## The question
+- **Reading 2 holds: no edge.** Both arms trail their exposure-matched benchmark by 5 to 6 bps a day, with confidence intervals that include zero.
+- **Reading 1 is inconclusive.** Raw price levels against scale-free features: both gates fail, so neither form is shown to be better.
+- **Reading 3 is descriptive only.** Both arms are ahead early and behind late. Because reading 2 holds, that pattern is not evidence of a regime change.
 
-The first version of this project (v1, kept at the [`v1` tag](https://github.com/Abhinawap/financial-ml-regime-analysis/tree/v1)) trained a model on 2019–2023 and saw it fail on 2024–2025. It blamed a regime change: a mean-reversion strategy learned in a choppy market met a trending one.
+![Equity curves: the v1-style arm ends at −2.5% and the stationary twin at +8.8%, while their exposure-matched benchmarks end at +50.3% and +80.6%](docs/img/headline.svg)
 
-There is a simpler explanation. v1 fed the model 30 lags of the raw closing price. Tree models cannot extrapolate to price levels they never trained on, so a model built on price levels may break whenever the price moves into a new range, regime change or not.
+*Seed-averaged out-of-sample equity, net of costs, with each arm's exposure-matched benchmark dashed. `docs/img/headline.svg` draws the same series as the notebook's `results/headline.png`, the figure the spec names, restyled for this page.*
 
-v2 tests that explanation directly. Two feature arms go through the same corrected pipeline and differ only in the form of their features:
+## v1's numbers were not returns, so its regime story was never tested
 
-- the **v1-style arm** uses v1's features as v1 used them, raw price and volume levels included;
-- the **stationary twin** replaces every level with a scale-free version (for example, each close lag becomes log(lag / today's close)).
+The first version of this project ([`v1` tag](https://github.com/Abhinawap/financial-ml-regime-analysis/tree/v1)) reported a validation Sharpe of 9.59, then blamed its 2024–2025 collapse on a regime change: a mean-reversion strategy learned in a choppy market met a trending one. None of its headline numbers was a return, and its pipeline leaked (details in [What v1 got wrong](#what-v1-got-wrong)).
 
-If raw levels caused the failure, the twin should do clearly better. No run here tests the regime theory directly, and this README does not claim one does.
+A simpler explanation also fits. v1 fed the model 30 lags of the raw closing price. Tree models cannot extrapolate to price levels they never trained on, so a model built on price levels may break whenever the price moves into a new range, regime change or not.
 
-## Result
+## Two arms differ only in feature form, inside one corrected pipeline
 
-The readings were fixed in the [spec](docs/spec.md) before the official run. Their outcomes are computed by the [v2 notebook](notebook/v2_analysis.ipynb) from those rules.
+![The v2 pipeline: frozen KEEN prices feed the v1-style arm and the stationary twin, which share the walk-forward fit, trade simulator, seed averaging and statistics](docs/img/pipeline.svg)
 
-- **Reading 2 holds: the strategy never had an edge.** Neither arm beats its exposure-matched benchmark. Both trail it by 5 to 6 bps a day, with confidence intervals that include zero. With nothing to break, a regime change cannot explain the failure.
-- **Reading 1 is inconclusive: the form of the features made no detectable difference.** Both of its gates fail (details below). The twin's +8.8% against the v1-style arm's −2.5% is not a ranking. The gap in mean per-seed Sharpe, 0.14, is a quarter of the selection spread of 0.59, and each arm's Sharpe interval is about two units wide.
-- **Reading 3 (descriptive only).** Both arms are ahead of their exposure-matched benchmark in the early windows and behind it in the late ones. That pattern is consistent with a regime change, but because reading 2 holds, it is not evidence of one.
+- The **v1-style arm** uses v1's features as v1 used them, raw price and volume levels included. It is v1's features inside the corrected pipeline.
+- The **stationary twin** replaces every level with a scale-free version (each close lag becomes log(lag / today's close)).
 
-### Headline table
+Both run through the same walk-forward fit, refitting feature selection and the model in each window on purged training rows. A long-or-flat trade simulator fills at the next close with IDX costs. Returns are averaged over five selection seeds, and each arm is measured against its own exposure-matched benchmark. If raw levels caused the failure, the twin should do clearly better. No run here tests the regime theory directly.
+
+## Neither arm beats its exposure-matched benchmark
+
+The twin's +8.8% against the v1-style arm's −2.5% is not a ranking. The gap in mean per-seed Sharpe, 0.14, is a quarter of the selection spread of 0.59, and each arm's Sharpe interval is about two units wide.
+
+### Both arms trail at real costs, and the best break-even is 15 bps
 
 Primary pair, seed-averaged series, 816 out-of-sample days, default costs (45 bps per buy, 55 bps per sell). Risk-free rate zero. Intervals are 95% stationary block-bootstrap intervals.
 
@@ -41,11 +47,11 @@ Excess return is the daily strategy return minus the exposure-matched benchmark'
 **Reading 1 gates** (v1-style minus stationary twin, both must pass):
 
 1. Paired 95% CI on the daily return difference: [−12.29, +7.30] bps. It includes zero, so the gate **fails**.
-2. Gap in mean per-seed Sharpe: −0.14, against a selection spread of 0.59 (the larger arm's max-minus-min per-seed Sharpe). The gate **fails**.
+2. Gap in mean per-seed Sharpe: −0.14, against a selection spread of 0.59 (the larger of the two arms' max-minus-min per-seed Sharpe). The gate **fails**.
 
 The spec expected the selection-spread gate might fail in the v1-style arm, because its raw lags are so correlated that MDA's choice among them is close to arbitrary. It did. The v1-style arm's per-seed Sharpe ranges from −0.19 to 0.40, depending only on the seed that shuffles MDA's permutations. The twin's runs from −0.05 to 0.49.
 
-### Per window
+### Per window (descriptive): the early-late pattern rests on a few windows
 
 Compounded strategy return per test window. Each window's exposure-matched benchmark is scaled by the arm's average position in that window, and excess is strategy return minus benchmark return, in percentage points. Not tested.
 
@@ -59,9 +65,9 @@ Compounded strategy return per test window. Each window's exposure-matched bench
 | 6 | 2024-11-21 to 2025-06-05 | late | −1.8% | +4.7% | −6.5 | −11.3% | +22.6% | −33.9 |
 | 7 | 2025-06-10 to 2025-10-24 | late | −3.4% | +2.4% | −5.8 | +17.2% | +12.8% | +4.4 |
 
-Windows 1–6 have 120 test days and window 7 has 96. A window is early or late according to whether most of its test days fall before or after 2024-01-01, the split v1 claimed. Reading 3 measures mean daily excess return: the v1-style arm averages +4.21 bps early and −1.18 late, the twin +6.54 early and −9.57 late. With three windows against four, no test is run, and this pattern cannot count as evidence of a regime change.
+Windows 1–6 have 120 test days and window 7 has 96. A window is early or late according to whether most of its test days fall before or after 2024-01-01, the split v1 claimed. Reading 3 measures mean daily excess return: the v1-style arm averages +4.21 bps early and −1.18 late, the twin +6.54 early and −9.57 late. With three windows against four, no test is run, and this pattern cannot count as evidence of a regime change. It also rests on single windows. Window 2 alone produces the v1-style arm's early lead (its early windows are −1.6, +17.9 and −2.8 points), and its late average of −1.18 bps a day is close to zero. Window 6 (−33.9) accounts for most of the twin's late deficit.
 
-### Price only, early and late
+### KEEN rose in both periods but fell 23% in 2024
 
 KEEN's own price path, buy-and-hold with no costs, whatever the models show.
 
@@ -73,7 +79,10 @@ KEEN's own price path, buy-and-hold with no costs, whatever the models show.
 
 The stock rose in both periods, but fell 23% in calendar 2024. v1's README described 2024–25 as a strong sustained uptrend; the 2024 fall contradicts that. These figures match the ones quoted in the spec before the run, to rounding, which is a check that the data and the buy-and-hold series behind every exposure-matched benchmark are right.
 
-### Cost stresses
+## Other results
+
+<details>
+<summary><b>Cost stresses: both arms trail by more at 150 and 200 bps</b></summary>
 
 Primary pair at 100 (default), 150 and 200 bps round trip, keeping the 10 bps sell-side tax gap. Costs never change a trading decision, so these are recomputed from gross returns and trade dates.
 
@@ -83,7 +92,10 @@ Primary pair at 100 (default), 150 and 200 bps round trip, keeping the 10 bps se
 | 150 bps | −14.7% | −6.61 [−13.99, +0.82] | −18.4% | −9.53 [−17.09, −2.12] |
 | 200 bps | −25.5% | −8.26 [−15.64, −0.81] | −38.8% | −13.05 [−20.62, −5.60] |
 
-### Meta-labelling ablation
+</details>
+
+<details>
+<summary><b>Meta-labelling ablation: no help</b></summary>
 
 Each primary-pair arm with a meta-model, trained on out-of-fold predictions, that vetoes +1 calls it rates below 0.5.
 
@@ -94,9 +106,12 @@ Each primary-pair arm with a meta-model, trained on out-of-fold predictions, tha
 | Stationary twin | +8.8% | 0.23 [−0.90, 1.21] | −6.01 [−13.60, +1.48] | 15 bps | 57.4 |
 | Stationary twin + meta | −31.6% | −0.49 [−1.55, 0.45] | −9.51 [−16.22, −3.54] | None | 56.4 |
 
-The meta-model did not help. Both meta runs did worse than their base runs, though no test of that difference was pre-registered. No window used the fallback for a window without out-of-fold +1 calls (0 of 35 in each arm). The spec estimated about 190 out-of-fold +1 calls per window. The twin's median was 205, but the v1-style arm's was 88, so that estimate missed.
+The meta-model did not help. Both meta runs did worse than their base runs, though no test of that difference was pre-registered. The v1-style meta run makes more trades than its base run (29.6 against 26.8 per seed), although the meta-model only vetoes calls. The trade logs show why: a veto on a review day ends a trade the base run would have reset. Resets fall from 45.4 to 22.0 per seed, so long base trades split into shorter ones, held 8.1 days on average against 12.4. No window used the fallback for a window without out-of-fold +1 calls (0 of 35 in each arm). The spec estimated about 190 out-of-fold +1 calls per window. The twin's median was 205, but the v1-style arm's was 88, so that estimate missed.
 
-### Secondary pair, descriptive
+</details>
+
+<details>
+<summary><b>Secondary pair: clustering leaves too few candidates for the seeds to matter</b></summary>
 
 Both forms with every feature, lags included, going through clustering. No gates.
 
@@ -107,7 +122,10 @@ Both forms with every feature, lags included, going through clustering. No gates
 
 Clustering leaves 6–8 candidates in the level form and 10–12 in the stationary form, below the 15 that MDA keeps. Every candidate is selected, so all five seeds give identical results.
 
-### Baselines
+</details>
+
+<details>
+<summary><b>Baselines: momentum made +107%, still with no clear excess return</b></summary>
 
 Simple rules through the same trade simulator and default costs.
 
@@ -118,6 +136,8 @@ Simple rules through the same trade simulator and default costs.
 | Mean reversion (RSI(14) < 30) | −14.3% | −0.63 [−1.47, 0.21] | −2.64 [−5.16, −0.25] | None | 6 | 0.06 |
 
 Don't compare buy-and-hold's +122% with the arms' single-digit returns. The arms hold the stock 41% and 64% of the time, so most of that gap is time out of the market, which is why excess return over the scaled benchmark is the measure of skill. Buy-and-hold is out of the stock only on its first day, so its exposure-matched benchmark is itself scaled by 815/816: its excess return is just its two costs, and its break-even is an artefact of that scaling. Momentum's excess interval includes zero, like every other. Mean reversion's signal fired in 11 episodes, as the spec estimated, but they made only 6 trades: with one trade at a time, an episode that starts while a position is open adds no trade.
+
+</details>
 
 ## What v1 got wrong
 
@@ -141,7 +161,7 @@ The spec, every setting and the readings were committed before the official run,
 
 **What had already been seen.** The data was not unseen. v1's results, the price path, and every figure quoted while planning (per-window buy-and-hold returns, the early/late price table, limit-down candidates) came from out-of-sample rows. The pre-registration proves that the analysis plan came before the v2 results. It does not prove the data was unseen. The second pass in the spec, a rerun on one liquid asset whose data nobody has looked at, is the test that would.
 
-**Amendments and deviations.** The spec carries four dated amendments, each recorded on [#1](https://github.com/Abhinawap/financial-ml-regime-analysis/issues/1) before the official outputs were opened: results saved to files, the meta-model fallback, guards on the official run, and two rules for computing the readings. **Deviation log:** no deviations. No bug has been found in the official run's code since it ran.
+**Amendments and deviations.** The spec carries five dated amendments, each recorded on [#1](https://github.com/Abhinawap/financial-ml-regime-analysis/issues/1). The first four came before the official outputs were opened: results saved to files, the meta-model fallback, guards on the official run, and two rules for computing the readings. The fifth came after the outputs were read: a presentation change that puts the excess-return plot first on this page ([Amendment 5](docs/spec.md#amendment-5-from-1s-comments)). **Deviation log:** no deviations. No bug has been found in the official run's code since it ran.
 
 **Data.** `data/KEEN_2019_2025.csv`, daily, dividend-adjusted, 2019-10-01 to 2025-10-24, 1,465 rows, sha256 `4a90304fa95b3e8adaf736e4876dfd03713585f7599e5d34bcd04a570d27f71d`. Yahoo rewrites adjusted prices after every dividend, so the file is frozen and never re-downloaded. (`results/run.json` records a different hash, `prices_sha256`, which is of the loaded price table rather than the file.)
 
@@ -169,6 +189,7 @@ uv sync
 
 uv run pytest                                      # tests use synthetic prices and development rows only
 uv run jupyter lab notebook/v2_analysis.ipynb      # reads results/, fits no model
+uv run python docs/img/make_charts.py              # rebuilds the README charts from results/
 ```
 
 To rerun the official results from the tagged code:
@@ -188,7 +209,8 @@ backtest/                        trade simulator, walk-forward run, statistics, 
 tests/                           tests for each seam, on synthetic prices and development rows
 notebook/v2_analysis.ipynb       v2 analysis: every table and figure above
 notebook/trading_strategy_analysis.ipynb   v1 analysis, unchanged apart from a banner
-results/                         official run outputs and the headline figure
+results/                         official run outputs and the notebook's headline figure
+docs/img/                        README charts (make_charts.py) and the pipeline diagram
 data/KEEN_2019_2025.csv          frozen price data
 docs/spec.md                     the pre-registered spec (copy of #1, with amendments)
 docs/research/                   IDX trading costs, short-selling rules and liquidity

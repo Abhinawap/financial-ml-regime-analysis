@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>v2 pipeline</title>
+  <!-- Source for docs/img/pipeline.svg. Export: diagram-design scripts/export_svg.py pipeline.html pipeline.svg --system-fonts -->
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: #ffffff; color: #374151;
+           display: flex; justify-content: center; padding: 3rem 2rem; }
+    .frame { max-width: 1200px; width: 100%; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+    svg { width: 100%; min-width: 960px; display: block; }
+    @media print { .diagram-container { overflow-x: visible; } svg { min-width: 0; } }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <div class="diagram-container">
+      <svg viewBox="0 0 960 424" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="pipeline-title pipeline-desc">
+        <title id="pipeline-title">The v2 pipeline: two arms, one corrected backtest</title>
+        <desc id="pipeline-desc">Frozen KEEN prices feed two feature arms, the v1-style arm and the stationary twin, which run through the same walk-forward fit, trade simulator, seed averaging and statistics to reach the pre-registered readings.</desc>
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6B7280"/></marker>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#ffffff"/>
+
+        <!-- Arrows first -->
+        <g fill="none" stroke="#6B7280" stroke-width="1.2">
+          <path d="M152,112 H168 Q176,112 176,104 V84 Q176,76 184,76 H198" marker-end="url(#arrow)"/>
+          <path d="M152,136 H168 Q176,136 176,144 V164 Q176,172 184,172 H198" marker-end="url(#arrow)"/>
+          <path d="M376,76 H392 Q400,76 400,84 V96 Q400,104 408,104 H422" marker-end="url(#arrow)"/>
+          <path d="M376,172 H392 Q400,172 400,164 V152 Q400,144 408,144 H422" marker-end="url(#arrow)"/>
+          <line x1="656" y1="124" x2="702" y2="124" marker-end="url(#arrow)"/>
+          <line x1="816" y1="168" x2="816" y2="262" marker-end="url(#arrow)"/>
+          <line x1="704" y1="308" x2="658" y2="308" marker-end="url(#arrow)"/>
+          <line x1="424" y1="308" x2="378" y2="308" marker-end="url(#arrow)"/>
+        </g>
+
+        <!-- Arrow label on the vertical drop, beside the segment -->
+        <rect x="828" y="194" width="112" height="44" fill="#ffffff"/>
+        <text font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="9.5" letter-spacing="0.06em" fill="#4B5563"><tspan x="832" y="206">RESULTS/</tspan><tspan x="832" y="219">WRITTEN ONCE AT</tspan><tspan x="832" y="232">V2-OFFICIAL-RUN</tspan></text>
+
+        <!-- Nodes -->
+        <g font-family="'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+          <!-- Data -->
+          <rect x="24" y="88" width="128" height="72" rx="6" fill="#ffffff" stroke="#374151" stroke-width="1"/>
+          <rect x="36" y="98" width="40" height="14" rx="2" fill="#F3F4F6"/>
+          <text x="56" y="108" text-anchor="middle" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="9" letter-spacing="0.08em" fill="#4B5563">DATA</text>
+          <text x="36" y="132" font-size="14" font-weight="600" fill="#374151">KEEN prices</text>
+          <text x="36" y="148" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="10.5" fill="#4B5563">frozen, 1,465 rows</text>
+
+          <!-- v1-style arm (accent) -->
+          <rect x="200" y="40" width="176" height="72" rx="6" fill="rgba(0,114,178,0.08)" stroke="#0072B2" stroke-width="1.4"/>
+          <rect x="212" y="50" width="34" height="14" rx="2" fill="rgba(0,114,178,0.14)"/>
+          <text x="229" y="60" text-anchor="middle" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="9" letter-spacing="0.08em" fill="#005A8C">ARM</text>
+          <text x="212" y="84" font-size="14" font-weight="600" fill="#374151">v1-style arm</text>
+          <text x="212" y="100" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="10.5" fill="#4B5563">raw price levels</text>
+
+          <!-- Stationary twin (accent) -->
+          <rect x="200" y="136" width="176" height="72" rx="6" fill="rgba(0,114,178,0.08)" stroke="#0072B2" stroke-width="1.4"/>
+          <rect x="212" y="146" width="34" height="14" rx="2" fill="rgba(0,114,178,0.14)"/>
+          <text x="229" y="156" text-anchor="middle" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="9" letter-spacing="0.08em" fill="#005A8C">ARM</text>
+          <text x="212" y="180" font-size="14" font-weight="600" fill="#374151">Stationary twin</text>
+          <text x="212" y="196" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="10.5" fill="#4B5563">levels made scale-free</text>
+
+          <!-- Walk-forward -->
+          <rect x="424" y="68" width="232" height="112" rx="6" fill="#ffffff" stroke="#374151" stroke-width="1"/>
+          <rect x="436" y="78" width="80" height="14" rx="2" fill="#F3F4F6"/>
+          <text x="476" y="88" text-anchor="middle" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="9" letter-spacing="0.08em" fill="#4B5563">EACH WINDOW</text>
+          <text x="436" y="112" font-size="14" font-weight="600" fill="#374151">Walk-forward fit</text>
+          <text x="436" y="130" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="10.5" fill="#4B5563">7 windows, 600/120 rows, purged</text>
+          <text x="436" y="146" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="10.5" fill="#4B5563">cluster, medoid, MDA top 15</text>
+          <text x="436" y="162" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="10.5" fill="#4B5563">XGBoost, v1 settings</text>
+
+          <!-- Trade simulator -->
+          <rect x="704" y="80" width="224" height="88" rx="6" fill="#ffffff" stroke="#374151" stroke-width="1"/>
+          <rect x="716" y="90" width="52" height="14" rx="2" fill="#F3F4F6"/>
+          <text x="742" y="100" text-anchor="middle" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="9" letter-spacing="0.08em" fill="#4B5563">TRADES</text>
+          <text x="716" y="124" font-size="14" font-weight="600" fill="#374151">Trade simulator</text>
+          <text x="716" y="140" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="10.5" fill="#4B5563">long or flat, next-close fills</text>
+          <text x="716" y="156" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="10.5" fill="#4B5563">45 / 55 bps per side</text>
+
+          <!-- Seed-averaged series -->
+          <rect x="704" y="264" width="224" height="88" rx="6" fill="#ffffff" stroke="#374151" stroke-width="1"/>
+          <rect x="716" y="274" width="52" height="14" rx="2" fill="#F3F4F6"/>
+          <text x="742" y="284" text-anchor="middle" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="9" letter-spacing="0.08em" fill="#4B5563">SERIES</text>
+          <text x="716" y="308" font-size="14" font-weight="600" fill="#374151">Seed-averaged series</text>
+          <text x="716" y="324" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="10.5" fill="#4B5563">5 selection seeds per arm</text>
+          <text x="716" y="340" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="10.5" fill="#4B5563">816 out-of-sample days</text>
+
+          <!-- Statistics -->
+          <rect x="424" y="264" width="232" height="88" rx="6" fill="#ffffff" stroke="#374151" stroke-width="1"/>
+          <rect x="436" y="274" width="76" height="14" rx="2" fill="#F3F4F6"/>
+          <text x="474" y="284" text-anchor="middle" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="9" letter-spacing="0.08em" fill="#4B5563">STATISTICS</text>
+          <text x="436" y="308" font-size="14" font-weight="600" fill="#374151">Excess return, Sharpe</text>
+          <text x="436" y="324" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="10.5" fill="#4B5563">vs exposure-matched benchmark</text>
+          <text x="436" y="340" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="10.5" fill="#4B5563">block-bootstrap 95% CIs</text>
+
+          <!-- Readings -->
+          <rect x="24" y="264" width="352" height="88" rx="6" fill="#ffffff" stroke="#374151" stroke-width="1"/>
+          <rect x="36" y="274" width="58" height="14" rx="2" fill="#F3F4F6"/>
+          <text x="65" y="284" text-anchor="middle" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="9" letter-spacing="0.08em" fill="#4B5563">OUTCOME</text>
+          <text x="36" y="308" font-size="14" font-weight="600" fill="#374151">Pre-registered readings</text>
+          <text x="36" y="324" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="10.5" fill="#4B5563">1: do the arms differ?  2: any edge?</text>
+          <text x="36" y="340" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="10.5" fill="#4B5563">3: early vs late, descriptive only</text>
+        </g>
+
+        <!-- Legend strip -->
+        <g font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="9.5" letter-spacing="0.06em" fill="#4B5563">
+          <line x1="24" y1="380" x2="936" y2="380" stroke="#E5E7EB" stroke-width="1"/>
+          <rect x="24" y="396" width="16" height="12" rx="2" fill="rgba(0,114,178,0.08)" stroke="#0072B2" stroke-width="1.4"/>
+          <text x="48" y="406">THE TWO ARMS COMPARED: SAME STEPS, DIFFERENT FEATURE FORM</text>
+          <rect x="452" y="396" width="16" height="12" rx="2" fill="#ffffff" stroke="#374151" stroke-width="1"/>
+          <text x="476" y="406">SHARED STEP</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+</body>
+</html>
