@@ -43,3 +43,14 @@ def test_frozen_settings_on_development_rows_fail_clearly_before_writing(tmp_pat
     with pytest.raises(ValueError, match="too few rows"):
         main(["--out", str(tmp_path / "out")])
     assert not (tmp_path / "out").exists()
+
+
+def test_gross_returns_differ_from_net_by_one_round_trip_cost_per_trade(tmp_path):
+    # Cost stresses and break-even are recomputed from gross returns and trade dates (spec), never by refitting.
+    main(["--out", str(tmp_path)], settings=TINY)
+    series = pd.read_csv(tmp_path / "series.csv")
+    n_trades = pd.read_csv(tmp_path / "trades.csv").groupby("run").size()
+    cost = (series.gross_return - series["return"]).groupby(series.run).sum()
+    expected = n_trades.reindex(cost.index, fill_value=0) * (45 + 55) / 1e4
+    pd.testing.assert_series_equal(cost, expected.astype(float), check_names=False)
+    assert n_trades["v1_style"] > 0 and cost["benchmark"] == 0

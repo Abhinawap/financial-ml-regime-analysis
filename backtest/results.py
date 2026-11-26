@@ -25,7 +25,7 @@ from backtest.features import (
     V1_STYLE,
 )
 from backtest.settings import Settings
-from backtest.simulator import buy_and_hold
+from backtest.simulator import buy_and_hold, simulate
 from backtest.walkforward import walk_forward
 
 ARMS = {"v1_style": V1_STYLE, "stationary_twin": STATIONARY_TWIN,
@@ -35,32 +35,37 @@ PACKAGES = ["numpy", "pandas", "scipy", "scikit-learn", "xgboost", "pandas-ta-cl
 
 
 def run_results(prices: pd.DataFrame, settings: Settings, out: Path, official_run: bool) -> None:
-    """Write series.csv (daily return and position per run and seed), trades.csv, windows.csv and run.json."""
+    """Write series.csv (daily net and gross return and position per run and seed; seed blank for baselines), trades.csv, windows.csv and run.json."""
     series, trades, windows = [], [], []
 
-    def add(run, seed, returns, position, trade_log=None):
-        series.append(pd.DataFrame({"date": returns.index, "run": run, "seed": seed,
-                                    "return": returns.to_numpy(), "position": position.to_numpy()}))
-        if trade_log is not None and not trade_log.empty:  # an empty log has object dtypes that break concat
+    free = dataclasses.replace(settings, buy_cost_bps=0.0, sell_cost_bps=0.0)  # costs never change a decision
+
+    def record(run, seed, net, gross, position, trade_log):
+        series.append(pd.DataFrame({"date": net.index, "run": run, "seed": seed, "return": net.to_numpy(),
+                                    "gross_return": gross.to_numpy(), "position": position.to_numpy()}))
+        if not trade_log.empty:  # an empty log has object dtypes that break concat
             trades.append(trade_log.assign(run=run, seed=seed)[["run", "seed", *trade_log.columns]])
 
     runs = [(name, arm, False) for name, arm in ARMS.items()]
     runs += [(f"{name}_meta", ARMS[name], True) for name in PRIMARY_PAIR]
     for run, arm, meta in runs:
         for seed in settings.selection_seeds:
-            r = walk_forward(prices, arm, seed, settings, meta=meta)
-            add(run, seed, r.returns, r.position, r.trades)
-            w = r.windows.assign(run=run, seed=seed, features=r.windows.features.map(";".join))
-            windows.append(w[["run", "seed", *r.windows.columns]])
+            wf = walk_forward(prices, arm, seed, settings, meta=meta)
+            index = wf.returns.index  # the out-of-sample dates, the same for every run
+            gross = simulate(prices["Close"], wf.predictions, free).returns[index]
+            record(run, seed, wf.returns, gross, wf.position, wf.trades)
+            w = wf.windows.assign(run=run, seed=seed, features=wf.windows.features.map(";".join))
+            windows.append(w[["run", "seed", *wf.windows.columns]])
 
-    index = r.returns.index  # every run covers the same out-of-sample dates
     close = prices["Close"][index]
-    bh = buy_and_hold(close, settings)
-    add("buy_and_hold", pd.NA, bh.returns, bh.position, bh.trades)
+    held = buy_and_hold(close, settings)
+    record("buy_and_hold", pd.NA, held.returns, buy_and_hold(close, free).returns, held.position, held.trades)
+    gross_baselines = baselines(prices, index, free)
     for name, b in baselines(prices, index, settings).items():
-        add(name, pd.NA, b.returns, b.position, b.trades)
-    # Gross buy-and-hold, no costs: the exposure-matched benchmark before scaling.
-    add("benchmark", pd.NA, close.pct_change().fillna(0.0), pd.Series(1, index=index))
+        record(name, pd.NA, b.returns, gross_baselines[name].returns, b.position, b.trades)
+    # Unscaled, cost-free buy-and-hold: the notebook scales it by each run's average position.
+    benchmark = close.pct_change().fillna(0.0)
+    record("benchmark", pd.NA, benchmark, benchmark, pd.Series(1, index=index), held.trades.iloc[:0])
 
     out.mkdir(parents=True, exist_ok=True)
     for name, frames in [("series", series), ("trades", trades), ("windows", windows)]:
