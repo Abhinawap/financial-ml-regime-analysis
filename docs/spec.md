@@ -1,4 +1,4 @@
-> Copy of the v2 spec from [#1](https://github.com/Abhinawap/financial-ml-regime-analysis/issues/1). **#1 is the original**; if they disagree, #1 wins. This copy includes the amendment recorded in #1's comments.
+> Copy of the v2 spec from [#1](https://github.com/Abhinawap/financial-ml-regime-analysis/issues/1). **#1 is the original**; if they disagree, #1 wins. This copy includes the amendments recorded in #1's comments.
 
 > **Pre-registration.** This spec fixes the analysis plan, every free setting and the readings of the result before any v2 out-of-sample run. Terms follow `GLOSSARY.md`. The facts behind the cost and short-selling decisions are in `docs/research/idx-trading-frictions.md`.
 
@@ -285,7 +285,7 @@ All readings use the **primary pair** (the v1-style arm against the stationary t
 
 **Amendment, 2026-11-26, before development.** The spec has the v2 notebook run every arm and seed. Instead, one results command runs all arms, seeds, the meta-labelling ablation and the baselines, and saves the per-seed daily return series, trade logs, per-window fingerprints and selected features to files. The notebook only reads those files. A plotting fix after the official run then needs no model rerun and no deviation entry. Nothing else in the spec changes. The in-repo copy of the spec includes this amendment.
 
-## Amendment 2
+## Amendment 2 (from #1's comments)
 
 **Amendment, 2026-11-26, during development, before the official run.** Two additions to the meta-labelling ablation. Nothing else in the spec changes.
 
