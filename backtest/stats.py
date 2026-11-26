@@ -4,13 +4,10 @@ import pandas as pd
 
 from backtest.settings import Settings
 
-TRADING_DAYS = 252
-
-
-def sharpe(returns, axis=None) -> float:
+def sharpe(returns, settings: Settings, axis=None) -> float:
     """Annualised Sharpe of daily returns, risk-free rate zero."""
     r = np.asarray(returns, dtype=float)
-    return np.mean(r, axis=axis) / np.std(r, axis=axis, ddof=1) * np.sqrt(TRADING_DAYS)
+    return np.mean(r, axis=axis) / np.std(r, axis=axis, ddof=1) * np.sqrt(settings.trading_days)
 
 
 def _resample_indices(n: int, settings: Settings) -> np.ndarray:
@@ -31,19 +28,19 @@ def _percentile_ci(values: np.ndarray, alpha: float) -> tuple[float, float]:
     return float(lo), float(hi)
 
 
-def bootstrap_ci(returns, statistic=np.mean, settings: Settings = Settings(), alpha: float = 0.05) -> tuple[float, float]:
-    """Percentile CI of statistic(returns). statistic must accept axis= (np.mean, sharpe)."""
+def bootstrap_ci(returns, settings: Settings, statistic=np.mean) -> tuple[float, float]:
+    """Percentile CI of statistic(returns). statistic must accept axis= (np.mean, functools.partial(sharpe, settings=settings))."""
     r = np.asarray(returns, dtype=float)
-    return _percentile_ci(statistic(r[_resample_indices(len(r), settings)], axis=1), alpha)
+    return _percentile_ci(statistic(r[_resample_indices(len(r), settings)], axis=1), settings.ci_alpha)
 
 
-def paired_bootstrap_ci(a, b, statistic=np.mean, settings: Settings = Settings(), alpha: float = 0.05) -> tuple[float, float]:
+def paired_bootstrap_ci(a, b, settings: Settings, statistic=np.mean) -> tuple[float, float]:
     """Percentile CI of statistic(a) - statistic(b), resampling the same days for both series."""
     a, b = np.asarray(a, dtype=float), np.asarray(b, dtype=float)
     if len(a) != len(b):
         raise ValueError("paired series must have the same length")
     idx = _resample_indices(len(a), settings)
-    return _percentile_ci(statistic(a[idx], axis=1) - statistic(b[idx], axis=1), alpha)
+    return _percentile_ci(statistic(a[idx], axis=1) - statistic(b[idx], axis=1), settings.ci_alpha)
 
 
 def exposure_matched_benchmark(benchmark_returns, positions, windows=None):
@@ -66,7 +63,7 @@ def seed_average(series):
 
 
 
-def net_returns(gross_returns, trades, round_trip_bps: float, settings: Settings = Settings(), n_runs: int = 1):
+def net_returns(gross_returns, trades, round_trip_bps: float, settings: Settings, n_runs: int = 1):
     """Gross daily returns minus costs at round_trip_bps, keeping the settings' sell-side gap.
 
     trades: (entry_date, exit_date) pairs; buy cost is charged on the entry day, sell cost on the exit day.
@@ -84,7 +81,7 @@ def net_returns(gross_returns, trades, round_trip_bps: float, settings: Settings
 
 
 def break_even_cost(gross_returns, benchmark_returns, positions, trades,
-                    settings: Settings = Settings(), n_runs: int = 1, windows=None) -> float | None:
+                    settings: Settings, n_runs: int = 1, windows=None) -> float | None:
     """Round-trip cost in bps at which mean excess return is zero; None if the strategy trails the benchmark gross."""
     gross_excess = excess_returns(gross_returns, benchmark_returns, positions, windows).mean()
     if gross_excess < 0:

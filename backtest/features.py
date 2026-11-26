@@ -3,18 +3,18 @@ import numpy as np
 import pandas as pd
 import pandas_ta_classic as ta
 
-N_LAGS = 30
-CUM_WINDOW = 20
+from backtest.settings import Settings
 
 
-def level_features(prices: pd.DataFrame) -> pd.DataFrame:
-    """OHLCV, v1's technical indicators and 30 close lags, computed from rows up to each row.
+def level_features(prices: pd.DataFrame, settings: Settings) -> pd.DataFrame:
+    """OHLCV, v1's technical indicators and `settings.n_lags` close lags, computed from rows up to each row.
 
     Warm-up rows are NaN; callers drop them (v1 did dropna).
     """
     p = prices[["Open", "High", "Low", "Close", "Volume"]].astype("float64")
     o, h, l, c, v = (p[k] for k in ["Open", "High", "Low", "Close", "Volume"])
     f = p.copy()
+    # Indicator lengths below are v1's feature definitions, fixed by the spec, not tunables.
     f["rsi"] = ta.rsi(c, length=14)
     macd = ta.macd(c)
     f["macd"], f["macd_signal"], f["macd_hist"] = (
@@ -33,7 +33,7 @@ def level_features(prices: pd.DataFrame) -> pd.DataFrame:
     f["obv"] = ta.obv(c, v)
     f["cmf"] = ta.cmf(h, l, c, v)
     f["mfi"] = ta.mfi(h, l, c, v)
-    f["vol20"] = v.rolling(window=20).mean()
+    f["vol20"] = v.rolling(window=settings.cum_window).mean()
     f["ad"] = ta.ad(h, l, c, v)
     f["vwap"] = ta.vwap(h, l, c, v)
     f["ema_8"] = ta.ema(c, length=8)
@@ -44,27 +44,28 @@ def level_features(prices: pd.DataFrame) -> pd.DataFrame:
     f["adx"], f["dm_plus"], f["dm_minus"] = adx["ADX_14"], adx["DMP_14"], adx["DMN_14"]
     aroon = ta.aroon(h, l, length=25)
     f["aroon_up"], f["aroon_down"] = aroon["AROONU_25"], aroon["AROOND_25"]
-    for k in range(1, N_LAGS + 1):
+    for k in range(1, settings.n_lags + 1):
         f[f"lag_{k}"] = c.shift(k)
     return f
 
 
-_PRICE_LEVEL = (["Open", "High", "Low", "bb_mid", "bb_hi", "bb_lo", "kc_upper", "kc_Lower",
-                 "ema_8", "ema_21", "sma_50", "vwap"] + [f"lag_{k}" for k in range(1, N_LAGS + 1)])
+_PRICE_LEVEL = ["Open", "High", "Low", "bb_mid", "bb_hi", "bb_lo", "kc_upper", "kc_Lower",
+                "ema_8", "ema_21", "sma_50", "vwap"]
 _SPREADS = ["macd", "macd_signal", "macd_hist", "atr"]
 
 
-def stationary_features(prices: pd.DataFrame) -> pd.DataFrame:
+def stationary_features(prices: pd.DataFrame, settings: Settings) -> pd.DataFrame:
     """Level form with every price and volume level replaced by a scale-free version."""
-    f = level_features(prices)
+    f = level_features(prices, settings)
     c, v = f["Close"], f["Volume"]
     s = f.drop(columns="Close")
-    s[_PRICE_LEVEL] = np.log(f[_PRICE_LEVEL].div(c, axis=0))
+    price_level = _PRICE_LEVEL + [f"lag_{k}" for k in range(1, settings.n_lags + 1)]
+    s[price_level] = np.log(f[price_level].div(c, axis=0))
     s[_SPREADS] = f[_SPREADS].div(c, axis=0)
-    vol_sum = v.rolling(CUM_WINDOW).sum()
+    vol_sum = v.rolling(settings.cum_window).sum()
     for col in ("obv", "ad"):
         # Cumulative series start at 0 before the first row, so the first full window is defined.
-        s[col] = (f[col] - f[col].shift(CUM_WINDOW, fill_value=0.0)) / vol_sum
+        s[col] = (f[col] - f[col].shift(settings.cum_window, fill_value=0.0)) / vol_sum
     s["Volume"] = v / f["vol20"]
     s["vol20"] = s["Volume"]
     return s

@@ -1,8 +1,14 @@
+import dataclasses
+from functools import partial
+
 import numpy as np
 import pandas as pd
 import pytest
 
 from backtest import stats
+from backtest.settings import Settings
+
+S = Settings()
 
 
 def _returns(n=300, seed=1):
@@ -12,39 +18,40 @@ def _returns(n=300, seed=1):
 
 def test_c4_scaling_a_series_leaves_sharpe_unchanged():
     r = _returns()
-    assert stats.sharpe(r * 0.37) == pytest.approx(stats.sharpe(r))
+    assert stats.sharpe(r * 0.37, S) == pytest.approx(stats.sharpe(r, S))
 
 
 def test_sharpe_is_daily_mean_over_std_times_root_252():
     # mean 0.01, sample std 0.01 -> sqrt(252)
-    assert stats.sharpe(pd.Series([0.0, 0.01, 0.02])) == pytest.approx(np.sqrt(252))
+    assert stats.sharpe(pd.Series([0.0, 0.01, 0.02]), S) == pytest.approx(np.sqrt(252))
 
 
-SMALL = stats.Settings(bootstrap_resamples=500)
+SMALL = dataclasses.replace(S, bootstrap_resamples=500)
+SHARPE = partial(stats.sharpe, settings=SMALL)
 
 
 def test_c1_series_paired_with_itself_gives_ci_exactly_zero():
     r = _returns()
-    assert stats.paired_bootstrap_ci(r, r, settings=SMALL) == (0.0, 0.0)
+    assert stats.paired_bootstrap_ci(r, r, SMALL) == (0.0, 0.0)
 
 
 def test_c2_same_seed_gives_same_interval_twice():
     r = _returns()
-    first = stats.bootstrap_ci(r, stats.sharpe, settings=SMALL)
-    assert stats.bootstrap_ci(r, stats.sharpe, settings=SMALL) == first
-    assert first != stats.bootstrap_ci(r, stats.sharpe, settings=stats.Settings(bootstrap_resamples=500, bootstrap_seed=1))
+    first = stats.bootstrap_ci(r, SMALL, SHARPE)
+    assert stats.bootstrap_ci(r, SMALL, SHARPE) == first
+    assert first != stats.bootstrap_ci(r, dataclasses.replace(SMALL, bootstrap_seed=1), SHARPE)
 
 
 def test_bootstrap_ci_brackets_the_point_estimate():
     r = _returns(n=1000)
-    lo, hi = stats.bootstrap_ci(r, settings=SMALL)
+    lo, hi = stats.bootstrap_ci(r, SMALL)
     assert lo < r.mean() < hi
 
 
 def test_paired_ci_resamples_the_same_days_for_both_series():
     # b = a + constant: any shared-day resampling gives exactly the constant difference
     a = _returns()
-    lo, hi = stats.paired_bootstrap_ci(a + 0.001, a, settings=SMALL)
+    lo, hi = stats.paired_bootstrap_ci(a + 0.001, a, SMALL)
     assert lo == pytest.approx(0.001) and hi == pytest.approx(0.001)
 
 
@@ -83,12 +90,12 @@ def _flat_benchmark_case():
 def test_break_even_known_value():
     # excess before costs sums to 0.01 over 2 round trips -> 0.005 per round trip = 50 bps
     gross, bench, pos, trades = _flat_benchmark_case()
-    assert stats.break_even_cost(gross, bench, pos, trades) == pytest.approx(50.0)
+    assert stats.break_even_cost(gross, bench, pos, trades, S) == pytest.approx(50.0)
 
 
 def test_break_even_is_none_when_strategy_trails_benchmark_gross():
     gross, bench, pos, trades = _flat_benchmark_case()
-    assert stats.break_even_cost(-gross, bench, pos, trades) is None
+    assert stats.break_even_cost(-gross, bench, pos, trades, S) is None
 
 
 def test_recomputing_excess_at_break_even_gives_zero():
@@ -96,14 +103,14 @@ def test_recomputing_excess_at_break_even_gives_zero():
     pos = pd.Series(0.6, index=gross.index)
     d = gross.index
     trades = [(d[i], d[i + 7]) for i in range(0, 280, 20)]
-    c = stats.break_even_cost(gross, bench, pos, trades)
-    net = stats.net_returns(gross, trades, c)
+    c = stats.break_even_cost(gross, bench, pos, trades, S)
+    net = stats.net_returns(gross, trades, c, S)
     assert stats.excess_returns(net, bench, pos).mean() == pytest.approx(0.0, abs=1e-15)
 
 
 def test_scaled_costs_keep_the_10bps_sell_side_gap():
     gross, _, _, trades = _flat_benchmark_case()
-    cost = gross - stats.net_returns(gross, trades, 150.0)
+    cost = gross - stats.net_returns(gross, trades, 150.0, S)
     d = gross.index
     assert cost[d[0]] == pytest.approx(0.0070) and cost[d[3]] == pytest.approx(0.0080)
     assert cost[d[1]] == 0.0
@@ -112,4 +119,4 @@ def test_scaled_costs_keep_the_10bps_sell_side_gap():
 def test_seed_averaged_costs_are_divided_by_the_number_of_runs():
     gross, bench, pos, trades = _flat_benchmark_case()
     # same two trades in each of two runs -> each run's cost weighs 1/2, break-even unchanged
-    assert stats.break_even_cost(gross, bench, pos, trades * 2, n_runs=2) == pytest.approx(50.0)
+    assert stats.break_even_cost(gross, bench, pos, trades * 2, S, n_runs=2) == pytest.approx(50.0)

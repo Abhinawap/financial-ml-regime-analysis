@@ -110,3 +110,14 @@ def test_select_features_clusters_then_ranks_and_keeps_outside_columns():
     X["lag1"] = X["sig"]  # outside clustering: survives despite duplicating sig
     out = select_features(X, y, S, seed=42, model=_small(), outside=["lag1"])
     assert "sig_dup" not in out and {"sig", "lag1"} <= set(out)
+
+
+def test_mda_default_model_handles_a_training_fold_missing_a_class():
+    rng = np.random.default_rng(5)
+    n = 120
+    X = pd.DataFrame(rng.normal(size=(n, 3)), columns=["a", "b", "c"])
+    y = pd.Series(rng.choice([-1, 0], size=n))
+    y.iloc[60:] = rng.choice([-1, 0, 1], size=n - 60)  # class +1 first appears after the early folds' train rows
+    s = dataclasses.replace(S, primary_n_estimators=5)
+    imp = mda_importance(X, y, s, seed=42)
+    assert set(imp.index) == {"a", "b", "c"} and np.isfinite(imp).all()
