@@ -1,9 +1,13 @@
+import dataclasses
 import numpy as np
 import pandas as pd
 import pytest
 
 from backtest.data import load_prices
 from backtest.features import level_features, stationary_features
+from backtest.settings import Settings
+
+S = Settings()
 
 PRICE_COLS = ["Open", "High", "Low", "Close"]
 LAGS = [f"lag_{i}" for i in range(1, 31)]
@@ -26,12 +30,12 @@ def prices():
 
 @pytest.fixture(scope="module")
 def level(prices):
-    return level_features(prices)
+    return level_features(prices, S)
 
 
 @pytest.fixture(scope="module")
 def stat(prices):
-    return stationary_features(prices)
+    return stationary_features(prices, S)
 
 
 def test_exact_column_sets(level, stat):
@@ -60,20 +64,20 @@ def scaled(prices, price=1.0, volume=1.0):
 
 
 def test_price_scaling_leaves_stationary_price_features_unchanged(prices, stat):
-    s2 = stationary_features(scaled(prices, price=2.0 ** 10))
+    s2 = stationary_features(scaled(prices, price=2.0 ** 10), S)
     for col in PRICE_LEVEL + SPREADS + CUMULATIVE + STATIONARY:
         pd.testing.assert_series_equal(s2[col], stat[col], check_exact=False, rtol=1e-12, atol=0,
                                        obj=col)
 
 
 def test_price_scaling_changes_level_price_features(prices, level):
-    l2 = level_features(scaled(prices, price=2.0 ** 10))
+    l2 = level_features(scaled(prices, price=2.0 ** 10), S)
     for col in PRICE_LEVEL + ["Close"] + SPREADS:
         assert not np.allclose(l2[col].dropna(), level[col].dropna()), col
 
 
 def test_volume_scaling_leaves_stationary_volume_features_unchanged(prices, stat):
-    s2 = stationary_features(scaled(prices, volume=2.0 ** 10))
+    s2 = stationary_features(scaled(prices, volume=2.0 ** 10), S)
     for col in VOLUME_LEVEL + CUMULATIVE:
         pd.testing.assert_series_equal(s2[col], stat[col], check_exact=False, rtol=1e-12, atol=0,
                                        obj=col)
@@ -103,10 +107,15 @@ def test_price_level_transform_is_log_ratio_to_close(prices, stat):
 @pytest.mark.parametrize("form", [level_features, stationary_features])
 def test_no_lookahead(prices, form):
     t = 400
-    base = form(prices)
+    base = form(prices, S)
     changed = prices.astype("float64")
     rng = np.random.default_rng(0)
     n = len(prices) - t - 1
     changed.iloc[t + 1:, :] = changed.iloc[t + 1:, :].mul(rng.uniform(0.5, 2.0, n), axis=0)
-    altered = form(changed)
+    altered = form(changed, S)
     pd.testing.assert_frame_equal(base.iloc[: t + 1], altered.iloc[: t + 1])
+
+
+def test_n_lags_setting_controls_lag_columns(prices):
+    f = level_features(prices, dataclasses.replace(S, n_lags=5))
+    assert [c for c in f.columns if c.startswith("lag_")] == [f"lag_{k}" for k in range(1, 6)]

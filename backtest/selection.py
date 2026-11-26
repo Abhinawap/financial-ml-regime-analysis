@@ -67,14 +67,16 @@ def mda_importance(
     drops = np.zeros(X.shape[1])
     n_runs = 0
     for train, val in purged_splitter(settings).split(X):
-        present = np.unique(codes[train])  # a fold's train rows can miss a class
-        m = clone(model).fit(X.iloc[train], np.searchsorted(present, codes[train]))
+        # A fold's train rows can miss a class, and XGBoost needs every class present to size its output.
+        # Add one zero-weight row per missing class so the model always trains on all classes (fixed codes).
+        missing = np.setdiff1d(np.arange(len(classes)), codes[train])
+        Xt = pd.concat([X.iloc[train], X.iloc[train[:1]].iloc[np.zeros(len(missing), dtype=int)]])
+        yt = np.concatenate([codes[train], missing])
+        w = np.concatenate([np.ones(len(train)), np.zeros(len(missing))])
+        m = clone(model).fit(Xt, yt, sample_weight=w)
 
         def loss(Xv):
-            proba = np.zeros((len(val), len(classes)))
-            proba[:, present] = m.predict_proba(Xv).astype(float)
-            proba /= proba.sum(axis=1, keepdims=True)
-            return log_loss(codes[val], proba, labels=range(len(classes)))
+            return log_loss(codes[val], m.predict_proba(Xv), labels=range(len(classes)))
 
         Xv = X.iloc[val].copy()
         base = loss(Xv)

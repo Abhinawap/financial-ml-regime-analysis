@@ -41,6 +41,14 @@ class Settings:
     meta_threshold: float = 0.5
     meta_seed: int = 42
 
+    # Features
+    n_lags: int = 30  # close lags in the feature universe
+    cum_window: int = 20  # rolling window for vol20 and the obv/ad differencing
+
+    # Statistics
+    trading_days: int = 252  # Sharpe annualisation
+    ci_alpha: float = 0.05  # two-sided bootstrap CI level
+
     # Bootstrap (block length is the mean block length, in days)
     bootstrap_resamples: int = 10_000
     bootstrap_block_length: int = 10
