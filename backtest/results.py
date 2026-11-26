@@ -14,6 +14,7 @@ import subprocess
 from importlib.metadata import version
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from backtest.baselines import baselines
@@ -34,10 +35,23 @@ PRIMARY_PAIR = ("v1_style", "stationary_twin")
 PACKAGES = ["numpy", "pandas", "scipy", "scikit-learn", "xgboost", "pandas-ta-classic"]
 
 
+def git_describe() -> str:
+    return subprocess.run(["git", "describe", "--always", "--dirty"], check=True, capture_output=True, text=True,
+                          cwd=Path(__file__).parent).stdout.strip()
+
+
 def run_results(prices: pd.DataFrame, settings: Settings, out: Path, official_run: bool) -> None:
     """Write series.csv (daily net and gross return and position per run and seed; seed blank for baselines), trades.csv, windows.csv and run.json."""
-    series, trades, windows = [], [], []
+    # Synthetic rehearsal prices never had KEEN's suspensions or limit-down days: fail before the first fit.
+    for features in {arm.features for arm in ARMS.values()}:
+        X = features(prices, settings)
+        X = X.iloc[int(np.argmax(X.notna().all(axis=1).to_numpy())):]  # after warm-up, as walk_forward starts
+        bad = ~np.isfinite(X.to_numpy())
+        if bad.any():
+            raise ValueError(f"non-finite {features.__name__} after warm-up in {list(X.columns[bad.any(axis=0)])} "
+                             f"on {list(X.index[bad.any(axis=1)].date)}")
 
+    series, trades, windows = [], [], []
     free = dataclasses.replace(settings, buy_cost_bps=0.0, sell_cost_bps=0.0)  # costs never change a decision
 
     def record(run, seed, net, gross, position, trade_log):
@@ -67,11 +81,10 @@ def run_results(prices: pd.DataFrame, settings: Settings, out: Path, official_ru
     benchmark = close.pct_change().fillna(0.0)
     record("benchmark", pd.NA, benchmark, benchmark, pd.Series(1, index=index), held.trades.iloc[:0])
 
+    git = git_describe()  # before any file is written, so a git failure leaves no partial output
     out.mkdir(parents=True, exist_ok=True)
     for name, frames in [("series", series), ("trades", trades), ("windows", windows)]:
         pd.concat(frames, ignore_index=True).astype({"seed": "Int64"}).to_csv(out / f"{name}.csv", index=False)
-    git = subprocess.run(["git", "describe", "--always", "--dirty"], check=True, capture_output=True, text=True,
-                         cwd=Path(__file__).parent).stdout.strip()
     info = {
         "official_run": official_run,
         "rows": len(prices), "first_date": str(prices.index[0].date()), "last_date": str(prices.index[-1].date()),
@@ -89,6 +102,8 @@ def main(argv=None, settings=None) -> None:
     parser.add_argument("--official-run", action="store_true", help="read every row, out-of-sample included")
     parser.add_argument("--out", type=Path, default=Path("results"))
     args = parser.parse_args(argv)
+    if args.official_run and git_describe().endswith("-dirty"):
+        raise ValueError("refusing --official-run with uncommitted changes: run.json would not name the code that ran")
     prices = load_prices(official_run=args.official_run)
     run_results(prices, Settings() if settings is None else settings, args.out, args.official_run)
 

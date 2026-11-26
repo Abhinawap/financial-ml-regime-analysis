@@ -3,8 +3,9 @@ import dataclasses
 import pandas as pd
 import pytest
 
-from backtest.results import main
+from backtest.results import main, run_results
 from backtest.settings import Settings
+from tests.test_walkforward import prices
 
 # Two windows on the development rows, one seed: the whole command in a few seconds.
 TINY = dataclasses.replace(Settings(), train_rows=400, test_rows=100, step=100, primary_n_estimators=5,
@@ -54,3 +55,21 @@ def test_gross_returns_differ_from_net_by_one_round_trip_cost_per_trade(tmp_path
     expected = n_trades.reindex(cost.index, fill_value=0) * (45 + 55) / 1e4
     pd.testing.assert_series_equal(cost, expected.astype(float), check_names=False)
     assert n_trades["v1_style"] > 0 and cost["benchmark"] == 0
+
+
+def test_a_non_finite_feature_after_warm_up_stops_the_run_before_any_fit_or_file(tmp_path):
+    # A trading suspension: 25 zero-volume days make volume-scaled features 0/0.
+    p = prices(600)
+    p.iloc[300:325, p.columns.get_loc("Volume")] = 0.0
+    with pytest.raises(ValueError, match="non-finite"):
+        run_results(p, TINY, tmp_path / "out", official_run=False)
+    assert not (tmp_path / "out").exists()
+
+
+def test_official_run_refuses_a_dirty_tree_before_reading_any_price(tmp_path, monkeypatch):
+    # run.json's commit is the record of the official run; uncommitted changes would make it meaningless.
+    from backtest import results
+    monkeypatch.setattr(results, "git_describe", lambda: "v1-36-gdb41825-dirty")
+    monkeypatch.setattr(results, "load_prices", lambda **_: pytest.fail("read prices on a dirty tree"))
+    with pytest.raises(ValueError, match="uncommitted"):
+        main(["--official-run", "--out", str(tmp_path / "out")])

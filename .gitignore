@@ -28,3 +28,6 @@ Thumbs.db
 # Environment
 .env
 .venv
+
+# Synthetic rehearsal outputs (official results/ is committed)
+results-rehearsal/
