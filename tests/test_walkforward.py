@@ -119,6 +119,13 @@ def test_a4_position_open_at_a_window_boundary_carries_over_and_next_window_deci
     assert (res.position[p.index[31]:p.index[45]] == 1).all() and res.position[p.index[46]] == 0
 
 
+@pytest.mark.parametrize("step", [6, 18])
+def test_step_other_than_test_rows_is_rejected(step):
+    p = pd.DataFrame({"Close": 100.0}, index=pd.bdate_range("2020-01-01", periods=66))
+    with pytest.raises(ValueError, match="step"):
+        walk_forward(p, row_feature, seed=42, settings=dataclasses.replace(TINY, step=step), model=Stub())
+
+
 def test_a5_series_runs_from_after_first_training_window_to_last_row_with_short_final_window():
     p = pd.DataFrame({"Close": 100.0}, index=pd.bdate_range("2020-01-01", periods=66))
 

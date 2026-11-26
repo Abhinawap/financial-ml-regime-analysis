@@ -40,6 +40,8 @@ def walk_forward(prices: pd.DataFrame, features: Callable[[pd.DataFrame, Setting
     Every column of `features(prices, settings)` is used. `seed` is accepted for per-window feature
     selection (issue #8) and unused for now. `model` defaults to the primary XGBoost classifier.
     """
+    if settings.step != settings.test_rows:  # otherwise test windows overlap or leave gaps in the series
+        raise ValueError(f"step ({settings.step}) must equal test_rows ({settings.test_rows})")
     model = primary_model(settings) if model is None else model
     X = features(prices, settings)
     y = triple_barrier_labels(prices["Close"], settings)
