@@ -13,3 +13,7 @@ jobs:
       - run: uv run ruff check
       - run: uv run vulture
       - run: uv run pytest
+      # The official outputs are committed: prove the notebook and the README charts still run on them.
+      # No diff check: CI lacks the Inter font, so its chart outlines differ from the committed SVGs.
+      - run: uv run jupyter nbconvert --to notebook --execute notebook/v2_analysis.ipynb --output-dir "$RUNNER_TEMP"
+      - run: uv run python docs/img/make_charts.py results "$RUNNER_TEMP/charts"

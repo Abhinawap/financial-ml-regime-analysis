@@ -5,6 +5,7 @@ Judgement calls for the reviewer. Mechanical rules are enforced by `tests/test_a
 ## Spec
 
 - **Undefined behaviour ships with an amendment.** Behaviour the spec leaves undefined (a fallback, a skipped step) needs a matching dated amendment comment on #1, not just a PR description.
+- **Everything that reads results is built before the official-run tag.** The notebook, the README charts and the README layout are built and checked on rehearsal outputs first, so no amendment has to say "after the outputs were read" (Amendments 4 and 5 of the v2 run did). `scripts/rehearsal.py` computes every reading and draws the charts, so a reading or chart that can't be computed fails the rehearsal; a reading that needs a rule the spec lacks gets its amendment then.
 
 ## Settings
 

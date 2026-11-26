@@ -77,15 +77,24 @@ def test_reading3_holds_when_an_arm_beats_its_benchmark_early_and_trails_it_late
     assert not reading3(-early_then_late, positions, benchmark, WINDOWS, SPLIT)["holds"]
 
 
+# Two seeds, and a boundary inside the development rows so both reading-3 sides exist.
+TINY_RUN = dataclasses.replace(TINY, selection_seeds=(42, 43), reading3_boundary=datetime.date(2022, 1, 1))
+
+
 @pytest.fixture(scope="module")
-def tiny(tmp_path_factory):
+def tiny_dir(tmp_path_factory):
     out = tmp_path_factory.mktemp("results")
-    main(["--out", str(out)], settings=dataclasses.replace(TINY, selection_seeds=(42, 43)))
-    return load(out)
+    main(["--out", str(out)], settings=TINY_RUN)
+    return out
+
+
+@pytest.fixture(scope="module")
+def tiny(tiny_dir):
+    return load(tiny_dir)
 
 
 def test_load_restores_the_settings_the_run_used(tiny):
-    assert tiny[3] == dataclasses.replace(TINY, selection_seeds=(42, 43))
+    assert tiny[3] == TINY_RUN
 
 
 def test_per_seed_returns_rebuilt_from_gross_returns_and_trade_dates_match_the_saved_net_returns(tiny):
@@ -128,3 +137,10 @@ def test_a_window_split_evenly_by_the_boundary_has_no_side_and_stops_the_analysi
     flat = pd.Series(0.0, index=WDAYS)
     with pytest.raises(ValueError, match="evenly"):
         per_window(flat, flat + 1, flat, WINDOWS, even)
+
+
+def test_the_rehearsal_computes_every_reading_and_table_and_draws_the_readme_charts(tiny_dir):
+    # Anything that reads results must run on rehearsal outputs before the official-run tag.
+    from scripts.rehearsal import analyse
+    analyse(tiny_dir)
+    assert {p.name for p in (tiny_dir / "charts").iterdir()} == {"excess_ci.svg", "headline.svg"}

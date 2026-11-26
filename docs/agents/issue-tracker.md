@@ -11,6 +11,7 @@ Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all o
 - **Comment on an issue**: `gh issue comment <number> --body "..."`
 - **Apply / remove labels**: `gh issue edit <number> --add-label "..."` / `--remove-label "..."`
 - **Close**: `gh issue close <number> --comment "..."`
+- **Human ticket with a step that can't be undone** (an official run, a tag, a publication): make its first step "Every blocker is closed", with the blocker check from **fetch the relevant ticket** below. No skill runs that check for a human ticket.
 
 Infer the repo from `git remote -v`; `gh` does this automatically when run inside a clone.
 
@@ -32,7 +33,7 @@ Create a GitHub issue.
 
 ## When a skill says "fetch the relevant ticket"
 
-Read it as in **Read an issue** above.
+Read it as in **Read an issue** above, then check its blockers: `gh api 'repos/{owner}/{repo}/issues/<n>' --jq .issue_dependencies_summary.blocked_by`. Above 0 means the ticket is not ready: list the open blockers (`gh api 'repos/{owner}/{repo}/issues/<n>/dependencies/blocked_by' --jq '.[] | select(.state == "open") | .number'`) and stop.
 
 ## Wayfinding operations
 
