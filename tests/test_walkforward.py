@@ -1,4 +1,5 @@
 import dataclasses
+from typing import ClassVar
 
 import numpy as np
 import pandas as pd
@@ -115,7 +116,7 @@ def row_feature(p, settings):
 ROW_ARM = Arm(row_feature, lags_outside_clustering=False)
 
 
-TINY = dataclasses.replace(S, horizon=4, train_rows=30, test_rows=12, step=12, n_splits=2)
+TINY = dataclasses.replace(S, horizon=4, train_rows=30, test_rows=12, step=12)
 
 
 def test_a4_position_open_at_a_window_boundary_carries_over_and_next_window_decides_exit():
@@ -187,3 +188,65 @@ def test_selection_seed_changes_selected_features_and_same_seed_reproduces_them(
 def test_v1_style_arm_and_stationary_twin_differ_only_in_feature_form():
     assert dataclasses.replace(V1_STYLE, features=stationary_features) == STATIONARY_TWIN
     assert dataclasses.replace(CLUSTERED_LEVEL, features=stationary_features) == CLUSTERED_STATIONARY
+
+
+class FoldSpy(BaseEstimator):
+    """Primary stub: always calls +1, and its probabilities carry the last row it trained on."""
+
+    def fit(self, X, y, sample_weight=None):  # noqa: V107 (sklearn signature)
+        self.last_t_ = X["t"].max()
+        return self
+
+    def predict_proba(self, X):
+        return np.column_stack([np.full(len(X), self.last_t_), X["t"], np.full(len(X), 1e9)])
+
+
+class MetaStub(BaseEstimator):
+    """Meta stub: constant meta probability; records the rows each fitted copy trained on."""
+    seen: ClassVar[list] = []
+
+    def __init__(self, p=0.4):
+        self.p = p
+
+    def fit(self, X, y, sample_weight=None):  # noqa: V107 (sklearn signature)
+        MetaStub.seen.append(np.asarray(X)[np.asarray(sample_weight) > 0])
+        return self
+
+    def predict_proba(self, X):
+        return np.column_stack([np.full(len(X), 1 - self.p), np.full(len(X), self.p)])
+
+
+def test_meta_trains_only_on_out_of_fold_predictions():
+    MetaStub.seen.clear()
+    s = dataclasses.replace(TINY, train_rows=65)
+    p = pd.DataFrame({"Close": 100.0}, index=pd.bdate_range("2020-01-01", periods=80))
+    walk_forward(p, ROW_ARM, seed=42, settings=s, model=FoldSpy(), meta=True, meta_model=MetaStub())
+    first = MetaStub.seen[0]  # window 0: 60 purged training rows; five validation folds of 10 cover rows 10-59
+    assert first.shape == (50, 3)
+    last_trained, row = first[:, 0], first[:, 1]
+    assert list(row) == list(range(10, 60))
+    assert (last_trained < row - s.purge_length).all()  # no row's prediction came from a model that saw it
+
+
+def test_meta_vetoes_calls_below_threshold_and_keeps_calls_at_it():
+    p = prices(300)
+    base = run(p)
+    assert not base.trades.empty
+    vetoed = run(p, meta=True, meta_model=MetaStub(0.4))
+    assert vetoed.trades.empty and not (vetoed.predictions == 1).any()
+    kept = run(p, meta=True, meta_model=MetaStub(0.5))
+    pd.testing.assert_series_equal(kept.predictions, base.predictions)
+    pd.testing.assert_frame_equal(kept.trades, base.trades)
+
+
+def test_meta_off_is_the_base_run():
+    p = prices(300)
+    a, b = run(p), run(p, meta=False, meta_model=MetaStub(0.0))
+    pd.testing.assert_series_equal(a.returns, b.returns)
+    pd.testing.assert_frame_equal(a.trades, b.trades)
+
+
+def test_meta_ablation_runs_end_to_end_with_default_models():
+    s = dataclasses.replace(SMALL, meta_n_estimators=5, meta_max_depth=2)
+    res = walk_forward(prices(300), V1_STYLE, seed=42, settings=s, meta=True)
+    assert res.returns.notna().all() and res.predictions.isin([-1, 0, 1]).all()

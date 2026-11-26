@@ -108,5 +108,7 @@ def select_features(
 ) -> list[str]:
     """Cluster to medoids (keeping `outside` columns), then keep the top `n_features` by MDA."""
     cand = cluster_representatives(X, settings, outside)
+    if len(cand) <= settings.n_features:
+        return cand
     imp = mda_importance(X[cand], y, settings, seed, model)
     return list(imp.index[: settings.n_features])
