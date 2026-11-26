@@ -73,3 +73,14 @@ def test_official_run_refuses_a_dirty_tree_before_reading_any_price(tmp_path, mo
     monkeypatch.setattr(results, "load_prices", lambda **_: pytest.fail("read prices on a dirty tree"))
     with pytest.raises(ValueError, match="uncommitted"):
         main(["--official-run", "--out", str(tmp_path / "out")])
+
+
+def test_official_run_refuses_to_overwrite_an_earlier_official_result(tmp_path, monkeypatch):
+    # The deviation rule shows both results after a rerun, so the first run's files must survive it.
+    from backtest import results
+    (tmp_path / "run.json").write_text("{}")
+    monkeypatch.setattr(results, "git_describe", lambda: "v2-official-run")
+    monkeypatch.setattr(results, "load_prices", lambda **_: pytest.fail("read prices over an existing result"))
+    with pytest.raises(ValueError, match="already holds"):
+        main(["--official-run", "--out", str(tmp_path)])
+    assert (tmp_path / "run.json").read_text() == "{}"

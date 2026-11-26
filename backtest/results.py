@@ -104,6 +104,9 @@ def main(argv=None, settings=None) -> None:
     args = parser.parse_args(argv)
     if args.official_run and git_describe().endswith("-dirty"):
         raise ValueError("refusing --official-run with uncommitted changes: run.json would not name the code that ran")
+    if args.official_run and (args.out / "run.json").exists():
+        raise ValueError(f"refusing --official-run: {args.out} already holds a run; move or commit it first, "
+                         "since a rerun must be shown beside the first result")
     prices = load_prices(official_run=args.official_run)
     run_results(prices, Settings() if settings is None else settings, args.out, args.official_run)
 
