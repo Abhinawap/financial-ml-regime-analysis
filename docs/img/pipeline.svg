@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg viewBox="0 0 960 424" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="pipeline-title pipeline-desc" id="pipeline-root">
-        <title id="pipeline-title">The v2 pipeline: two arms, one corrected backtest</title>
-        <desc id="pipeline-desc">Frozen KEEN prices feed two feature arms, the v1-style arm and the stationary twin, which run through the same walk-forward fit, trade simulator, seed averaging and statistics to reach the pre-registered readings.</desc>
+        <title id="pipeline-title">The v2 pipeline: two models, one corrected backtest</title>
+        <desc id="pipeline-desc">Frozen KEEN prices feed two models, the price-level model and the returns-based model, which run through the same walk-forward fit, trade simulator, seed averaging and statistics to answer the pre-registered questions.</desc>
         <defs>
       <style>#pipeline-root { font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #374151; }
       #pipeline-root .diagram-container { width: 100%; overflow-x: auto; }
@@ -38,19 +38,19 @@
           <text x="36" y="132" font-size="14" font-weight="600" fill="#374151">KEEN prices</text>
           <text x="36" y="148" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="10.5" fill="#4B5563">frozen, 1,465 rows</text>
 
-          <!-- v1-style arm (accent) -->
+          <!-- Price-level model (accent) -->
           <rect x="220" y="40" width="176" height="72" rx="6" fill="#0072b2" stroke="#0072B2" stroke-width="1.4" fill-opacity="0.08"/>
-          <rect x="232" y="50" width="34" height="14" rx="2" fill="#0072b2" fill-opacity="0.14"/>
-          <text x="249" y="60" text-anchor="middle" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="9" letter-spacing="0.08em" fill="#005A8C">ARM</text>
-          <text x="232" y="84" font-size="14" font-weight="600" fill="#374151">v1-style arm</text>
+          <rect x="232" y="50" width="46" height="14" rx="2" fill="#0072b2" fill-opacity="0.14"/>
+          <text x="255" y="60" text-anchor="middle" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="9" letter-spacing="0.08em" fill="#005A8C">MODEL</text>
+          <text x="232" y="84" font-size="14" font-weight="600" fill="#374151">Price-level model</text>
           <text x="232" y="100" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="10.5" fill="#4B5563">raw price levels</text>
 
-          <!-- Stationary twin (accent) -->
+          <!-- Returns-based model (accent) -->
           <rect x="220" y="136" width="176" height="72" rx="6" fill="#0072b2" stroke="#0072B2" stroke-width="1.4" fill-opacity="0.08"/>
-          <rect x="232" y="146" width="34" height="14" rx="2" fill="#0072b2" fill-opacity="0.14"/>
-          <text x="249" y="156" text-anchor="middle" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="9" letter-spacing="0.08em" fill="#005A8C">ARM</text>
-          <text x="232" y="180" font-size="14" font-weight="600" fill="#374151">Stationary twin</text>
-          <text x="232" y="196" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="10.5" fill="#4B5563">scale-free levels</text>
+          <rect x="232" y="146" width="46" height="14" rx="2" fill="#0072b2" fill-opacity="0.14"/>
+          <text x="255" y="156" text-anchor="middle" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="9" letter-spacing="0.08em" fill="#005A8C">MODEL</text>
+          <text x="232" y="180" font-size="14" font-weight="600" fill="#374151">Returns-based model</text>
+          <text x="232" y="196" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="10.5" fill="#4B5563">price ratios to today</text>
 
           <!-- Walk-forward -->
           <rect x="432" y="60" width="248" height="128" rx="6" fill="#ffffff" stroke="#374151" stroke-width="1"/>
@@ -81,7 +81,7 @@
           <text x="754" y="284" text-anchor="middle" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="9" letter-spacing="0.08em" fill="#4B5563">SERIES</text>
           <text x="728" y="308" font-size="14" font-weight="600" fill="#374151">Seed-averaged series</text>
           <g font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="10.5" fill="#4B5563">
-            <text x="728" y="324">5 selection seeds per arm</text>
+            <text x="728" y="324">5 selection seeds per model</text>
             <text x="728" y="340">816 out-of-sample days</text>
           </g>
 
@@ -99,9 +99,9 @@
           <rect x="24" y="264" width="372" height="88" rx="6" fill="#ffffff" stroke="#374151" stroke-width="1"/>
           <rect x="36" y="274" width="60" height="14" rx="2" fill="#F3F4F6"/>
           <text x="66" y="284" text-anchor="middle" font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="9" letter-spacing="0.08em" fill="#4B5563">OUTCOME</text>
-          <text x="36" y="308" font-size="14" font-weight="600" fill="#374151">Pre-registered readings</text>
+          <text x="36" y="308" font-size="14" font-weight="600" fill="#374151">Pre-registered questions</text>
           <g font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="10.5" fill="#4B5563">
-            <text x="36" y="324">1: do the arms differ?  2: any edge?</text>
+            <text x="36" y="324">1: does feature form matter?  2: any edge?</text>
             <text x="36" y="340">3: early vs late, descriptive only</text>
           </g>
         </g>
@@ -110,7 +110,7 @@
         <g font-family="'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace" font-size="9.5" letter-spacing="0.06em" fill="#4B5563">
           <line x1="24" y1="380" x2="936" y2="380" stroke="#E5E7EB" stroke-width="1"/>
           <rect x="24" y="396" width="16" height="12" rx="2" fill="#0072b2" stroke="#0072B2" stroke-width="1.4" fill-opacity="0.08"/>
-          <text x="48" y="406">THE TWO ARMS COMPARED: SAME STEPS, DIFFERENT FEATURE FORM</text>
+          <text x="48" y="406">THE TWO MODELS COMPARED: SAME STEPS, DIFFERENT FEATURE FORM</text>
           <rect x="560" y="396" width="16" height="12" rx="2" fill="#ffffff" stroke="#374151" stroke-width="1"/>
           <text x="584" y="406">SHARED STEP</text>
         </g>
