@@ -34,6 +34,14 @@ _Avoid_: Benchmark (unqualified)
 The daily strategy return minus the exposure-matched benchmark's daily return. The measure of skill, because scaling the benchmark cannot change its Sharpe ratio.
 _Avoid_: Alpha, outperformance
 
+**Max drawdown**:
+The largest fall in equity from a running peak to a later trough, as a percentage of that peak. Equity starts at 1 before the first out-of-sample day and compounds daily returns. Reported for the seed-averaged series and its exposure-matched benchmark over the whole out-of-sample series, as a point estimate (Amendment 7).
+_Avoid_: Drawdown per window
+
+**Time under water**:
+A run of consecutive trading days on which equity is below its previous running peak. The longest run is reported in trading days; a run still open on the final day counts to the final day and is marked "not recovered" (Amendment 7).
+_Avoid_: Drawdown duration per window
+
 ## Trading
 
 **Position**:
