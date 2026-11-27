@@ -52,7 +52,7 @@ Three questions and their pass/fail rules were written into the [spec](docs/spec
 
 Break-even is the round-trip cost at which excess return is zero; "None" means the model trails its benchmark even before costs. The returns-based model's 15 bps is far below the roughly 100 bps a real round trip costs.
 
-Drawdown and time under water are given for each model and, in brackets, its exposure-matched benchmark, which pays no costs and so is slightly favoured ([Amendment 7](docs/spec.md#amendment-7-from-1s-comments)). "Not recovered" means the model was still below its earlier peak on the last day. With the same average exposure, the returns-based model fell 50% from its peak against its benchmark's 32%.
+Drawdown and time under water are given for each model and, in brackets, its exposure-matched benchmark, which pays no costs and so is slightly favoured ([Amendment 7](docs/spec.md#amendment-7-from-1s-comments)). "Not recovered" means the model was still below its earlier peak on the last day. With the same average exposure, the returns-based model fell 50% from its peak against its benchmark's 32%. The benchmark holds 64% of the stock every day, while each of the model's runs is either fully in or out, and the model lost 12.4%, 19.6% and 11.3% in windows 4 to 6 ([per-window table](#neither-model-beats-its-benchmark-and-feature-form-makes-no-detectable-difference)): through KEEN's 2024 fall, then a 2025 rebound in which that window's benchmark gained 22.6%.
 
 The returns-based model's +8.8% against −2.5% is not a ranking. The gap in mean per-seed Sharpe, 0.14, is a quarter of the 0.59 that changing only the random seed produces, so question 1 fails both its tests:
 
