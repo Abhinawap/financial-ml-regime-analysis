@@ -6,6 +6,7 @@ import pandas as pd
 import pytest
 
 from backtest.analysis import (
+    drawdown,
     load,
     per_seed,
     per_window,
@@ -57,6 +58,14 @@ def test_reading1_is_inconclusive_when_the_gates_favour_different_arms():
 WDAYS = pd.bdate_range("2023-01-02", periods=12)
 WINDOWS = pd.DataFrame({"test_start": WDAYS[::4], "test_end": WDAYS[3::4]})
 SPLIT = dataclasses.replace(FAST, reading3_boundary=datetime.date(2023, 1, 11))
+
+
+def test_drawdown_counts_the_start_as_a_peak_ends_a_run_at_the_old_peak_and_flags_an_open_run():
+    # Equity 0.5, 1.0, 0.75, 0.75, 0.375 (binary-exact). Day 1 falls from the starting 1, day 2 equals the old
+    # peak and ends that run, days 3-5 are under water to the final day and never recover.
+    r = [-0.5, 1.0, -0.25, 0.0, -0.5]
+    assert drawdown(r) == {"max_drawdown": 0.625, "days_under_water": 3, "recovered": False}
+    assert drawdown(r[:2]) == {"max_drawdown": 0.5, "days_under_water": 1, "recovered": True}
 
 
 def test_per_window_scales_each_window_benchmark_by_its_own_average_position_and_sides_by_most_days():

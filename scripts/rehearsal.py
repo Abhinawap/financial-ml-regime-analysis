@@ -15,11 +15,12 @@ from backtest import analysis as a
 from backtest.results import ARMS, PRIMARY_PAIR, run_results
 from backtest.settings import Settings
 from docs.img.make_charts import main as make_charts
+from scripts.amendment7 import main as amendment7
 from tests.test_walkforward import prices  # the tests' seeded random walk
 
 
 def analyse(out: Path) -> None:
-    """The notebook's readings, tables and B10 cross-check, and the README charts (into out/charts), on out."""
+    """The notebook's readings, tables and B10 cross-check, Amendment 7's figures, and the README charts (into out/charts), on out."""
     series, trades, windows, settings = a.load(out)
     seeds = {run: a.per_seed(series, trades, run, settings) for run in PRIMARY_PAIR}
     print("reading 1:", a.reading1(*seeds.values(), settings)["outcome"])
@@ -38,6 +39,7 @@ def analyse(out: Path) -> None:
         for run in PRIMARY_PAIR:
             a.summary(series, trades, run, settings, buy + sell)
     a.price_only(series, settings)
+    amendment7(out)
     make_charts(out, out / "charts")
 
 

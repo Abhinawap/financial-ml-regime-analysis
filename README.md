@@ -7,7 +7,7 @@
 - **What it is.** An XGBoost model decides each day whether to hold KEEN, a small stock on the Indonesia Stock Exchange (IDX), or stay in cash. It is tested walk-forward on 816 trading days (June 2022 to October 2025), net of real IDX trading costs.
 - **Why it was rebuilt.** The project's first version (the [`v1` tag](https://github.com/Abhinawap/financial-ml-regime-analysis/tree/v1), October 2025) reported a Sharpe ratio of 9.59 and blamed its later collapse on a market "regime change". The 9.59 was a count of correct predictions, not a return, and the pipeline leaked future data. This version rewrites the evaluation from scratch.
 - **What it found.** Neither model beats its benchmark: both trail by 5 to 6 basis points a day, with 95% confidence intervals that include zero. With no edge to begin with, there was nothing for a regime change to break.
-- **Why the result can be trusted.** The question, settings and pass/fail rules were committed to git before the official run, the outputs were committed before anyone opened them, and 141 tests run in CI.
+- **Why the result can be trusted.** The question, settings and pass/fail rules were committed to git before the official run, the outputs were committed before anyone opened them, and 142 tests run in CI.
 
 Built with Python 3.12, pandas, scikit-learn, XGBoost and SciPy; walk-forward validation with purged training rows, a trade simulator with IDX costs, and block-bootstrap confidence intervals.
 
@@ -45,12 +45,14 @@ Three questions and their pass/fail rules were written into the [spec](docs/spec
 
 816 out-of-sample days, default costs (45 bps per buy, 55 bps per sell), risk-free rate zero, 95% block-bootstrap intervals:
 
-| Model | Return | Sharpe [95% CI] | Excess return, bps/day [95% CI] | Break-even cost | Trades per seed | Share of days held |
-|---|---|---|---|---|---|---|
-| **Price-level model (headline)** | **−2.5%** | **0.08 [−1.01, 0.99]** | **−4.97 [−12.37, +2.45]** | **None** | **26.8** | **41%** |
-| Returns-based model | +8.8% | 0.23 [−0.90, 1.21] | −6.01 [−13.60, +1.48] | 15 bps | 57.4 | 64% |
+| Model | Return | Sharpe [95% CI] | Excess return, bps/day [95% CI] | Break-even cost | Trades per seed | Share of days held | Max drawdown (benchmark) | Time under water, days (benchmark) |
+|---|---|---|---|---|---|---|---|---|
+| **Price-level model (headline)** | **−2.5%** | **0.08 [−1.01, 0.99]** | **−4.97 [−12.37, +2.45]** | **None** | **26.8** | **41%** | **−22.5% (−21.4%)** | **344, not recovered (469)** |
+| Returns-based model | +8.8% | 0.23 [−0.90, 1.21] | −6.01 [−13.60, +1.48] | 15 bps | 57.4 | 64% | −50.0% (−32.1%) | 494, not recovered (471) |
 
 Break-even is the round-trip cost at which excess return is zero; "None" means the model trails its benchmark even before costs. The returns-based model's 15 bps is far below the roughly 100 bps a real round trip costs.
+
+Drawdown and time under water are given for each model and, in brackets, its exposure-matched benchmark, which pays no costs and so is slightly favoured ([Amendment 7](docs/spec.md#amendment-7-from-1s-comments)). "Not recovered" means the model was still below its earlier peak on the last day. With the same average exposure, the returns-based model fell 50% from its peak against its benchmark's 32%. The benchmark holds 64% of the stock every day, while each of the model's runs is either fully in or out, and the model lost 12.4%, 19.6% and 11.3% in windows 4 to 6 ([per-window table](#neither-model-beats-its-benchmark-and-feature-form-makes-no-detectable-difference)): through KEEN's 2024 fall, then a 2025 rebound in which that window's benchmark gained 22.6%.
 
 The returns-based model's +8.8% against −2.5% is not a ranking. The gap in mean per-seed Sharpe, 0.14, is a quarter of the 0.59 that changing only the random seed produces, so question 1 fails both its tests:
 
@@ -103,6 +105,21 @@ Costs never change a trading decision, so these are recomputed from gross return
 | 100 bps | −2.5% | −4.97 [−12.37, +2.45] | +8.8% | −6.01 [−13.60, +1.48] |
 | 150 bps | −14.7% | −6.61 [−13.99, +0.82] | −18.4% | −9.53 [−17.09, −2.12] |
 | 200 bps | −25.5% | −8.26 [−15.64, −0.81] | −38.8% | −13.05 [−20.62, −5.60] |
+
+</details>
+
+<details>
+<summary><b>Bootstrap block length: 5, 10 or 20 days gives the same answer</b></summary>
+
+The spec set the bootstrap's mean block length to 10 days without recording a reason. Block length cannot move the mean, only the interval's width. The method and the rule that every reading stays on 10 days were fixed before these were computed ([Amendment 7](docs/spec.md#amendment-7-from-1s-comments)).
+
+| Mean block length | Price-level excess, bps/day [95% CI] | Returns-based excess, bps/day [95% CI] |
+|---|---|---|
+| 5 days | −4.97 [−12.60, +2.91] | −6.01 [−13.73, +1.57] |
+| 10 days (used throughout) | −4.97 [−12.37, +2.45] | −6.01 [−13.60, +1.48] |
+| 20 days | −4.97 [−12.23, +2.13] | −6.01 [−13.56, +1.22] |
+
+Every interval includes zero.
 
 </details>
 
@@ -167,9 +184,9 @@ The spec, every setting and the pass/fail rules were committed before the offici
 <details>
 <summary><b>Amendments, deviations and data</b></summary>
 
-**Amendments.** The spec carries six dated amendments, each recorded on [#1](https://github.com/Abhinawap/financial-ml-regime-analysis/issues/1). The first four came before the official outputs were opened: results saved to files, the meta-model fallback, guards on the official run, and two rules for computing the readings. The fifth and sixth came after: presentation changes that put the excess-return plot first on this page ([Amendment 5](docs/spec.md#amendment-5-from-1s-comments)) and give the two models plain names here and in the charts ([Amendment 6](docs/spec.md#amendment-6-from-1s-comments)). **Deviation log:** no deviations. No bug has been found in the official run's code since it ran.
+**Amendments.** The spec carries eight dated amendments, each recorded on [#1](https://github.com/Abhinawap/financial-ml-regime-analysis/issues/1). The first four came before the official outputs were opened: results saved to files, the meta-model fallback, guards on the official run, and two rules for computing the readings. The fifth and sixth came after: presentation changes that put the excess-return plot first on this page ([Amendment 5](docs/spec.md#amendment-5-from-1s-comments)) and give the two models plain names here and in the charts ([Amendment 6](docs/spec.md#amendment-6-from-1s-comments)). The seventh and eighth, also after, add three descriptive figures whose methods were fixed before any of them was computed: drawdown, a bound on the dividend-adjustment look-ahead, and a block-length check ([Amendment 7](docs/spec.md#amendment-7-from-1s-comments)). `scripts/amendment7.py` computes them, so the notebook stays as it ran ([Amendment 8](docs/spec.md#amendment-8-from-1s-comments)). **Deviation log:** no deviations. No bug has been found in the official run's code since it ran.
 
-**Data.** `data/KEEN_2019_2025.csv`, daily, dividend-adjusted, 2019-10-01 to 2025-10-24, 1,465 rows, sha256 `4a90304fa95b3e8adaf736e4876dfd03713585f7599e5d34bcd04a570d27f71d`. Yahoo rewrites adjusted prices after every dividend, so the file is frozen and never re-downloaded. (`results/run.json` records a different hash, `prices_sha256`, which is of the loaded price table rather than the file.)
+**Data.** `data/KEEN_2019_2025.csv`, daily, dividend-adjusted, 2019-10-01 to 2025-10-24, 1,465 rows, sha256 `4a90304fa95b3e8adaf736e4876dfd03713585f7599e5d34bcd04a570d27f71d`. Yahoo rewrites adjusted prices after every dividend, so the file is frozen and never re-downloaded. Adjustment puts a small look-ahead into price levels, bounded under [Limitations](#limitations). (`results/run.json` records a different hash, `prices_sha256`, which is of the loaded price table rather than the file.)
 
 </details>
 
@@ -178,7 +195,7 @@ The spec, every setting and the pass/fail rules were committed before the offici
 - **Low statistical power.** Buy-and-hold's own Sharpe interval is [−0.31, 1.71], so only a large gap between models could be detected.
 - **One illiquid stock.** Capacity is about 1% of KEEN's daily traded value, roughly IDR 10 m on a median day ([liquidity research](docs/research/idx-trading-frictions.md#5-liquidity)). The returns do not scale.
 - **Simple execution model.** Close-to-close fills, with no tick rounding, lot sizes, order of barrier touches within a day, or gap fills.
-- **Adjusted prices.** The data is dividend-adjusted, so its closes are not real traded prices.
+- **Adjusted prices leak future dividends into price levels.** Yahoo adjusts for a dividend by scaling every close before its ex-date down by the dividend's share of the price, so a price level on day t depends on dividends paid after t. Ratios between closes on or before t are scaled only by dividends already paid, so the returns-based model, the labels and the returns are clean. The leak reaches the price-level model and the clustered price-level run. It is small: KEEN paid six dividends in the data, and no adjusted price is more than 5.82% below the real traded price, or 4.14% from the first out-of-sample day on ([dividend research](docs/research/keen-dividends.md)). Look-ahead would normally flatter a model, but a distortion of its features need not help it, so the direction is unknown. The price-level model shows no edge with the leak in place, and nothing was rerun on unadjusted prices. The test uses KEEN because the question is whether the first version's failure on KEEN was a regime change.
 
 <details>
 <summary><b>Six more limitations</b></summary>
@@ -213,6 +230,7 @@ uv sync
 uv run pytest                                      # tests use synthetic prices and development rows only
 uv run jupyter lab notebook/v2_analysis.ipynb      # reads results/, fits no model
 uv run python docs/img/make_charts.py              # rebuilds the README charts from results/
+uv run python -m scripts.amendment7 results        # drawdown and block-length figures
 ```
 
 To rerun the official results from the tagged code:
@@ -230,13 +248,15 @@ Then set `RESULTS = "results-rerun"` at the top of the notebook. `requirements.t
 ```
 backtest/                        trade simulator, walk-forward run, statistics, results command, analysis
 tests/                           tests for each part, on synthetic prices and development rows
-notebook/v2_analysis.ipynb       analysis: every table and figure above
+notebook/v2_analysis.ipynb       analysis: every table and figure above except Amendment 7's
+scripts/amendment7.py            drawdown and block-length figures (Amendment 7)
+scripts/rehearsal.py             full-size run and analysis on synthetic prices
 notebook/trading_strategy_analysis.ipynb   the first version's analysis, unchanged apart from a banner
 results/                         official run outputs and the notebook's headline figure
 docs/img/                        README charts (make_charts.py) and the pipeline diagram
 data/KEEN_2019_2025.csv          frozen price data
 docs/spec.md                     the pre-registered spec (copy of #1, with amendments)
-docs/research/                   IDX trading costs, short-selling rules and liquidity
+docs/research/                   IDX trading costs, short-selling rules, liquidity and KEEN's dividends
 GLOSSARY.md                      the project's terms
 ```
 
