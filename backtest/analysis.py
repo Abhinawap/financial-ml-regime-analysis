@@ -80,6 +80,24 @@ def summary(series, trades, run, settings: Settings, round_trip_bps=None) -> dic
     }
 
 
+def drawdown(returns) -> dict:
+    """Max drawdown and longest time under water of daily returns (Amendment 7).
+
+    Equity starts at 1 before the first day, which counts as a peak, and compounds the returns. A day is under
+    water while equity is below its previous running peak; equalling or exceeding the peak ends the run. The
+    longest run is in trading days, and `recovered` is False when it is still open on the final day (the later
+    run wins a tie).
+    """
+    equity = np.cumprod(1 + np.asarray(returns, dtype="float64"))
+    peak = np.maximum.accumulate(np.concatenate([[1.0], equity]))[:-1]  # the running peak before each day
+    longest = run = 0
+    for under in equity < peak:
+        run = run + 1 if under else 0
+        longest = max(longest, run)
+    return {"max_drawdown": float(np.max(1 - equity / peak, initial=0.0)),
+            "days_under_water": longest, "recovered": run == 0 or run < longest}
+
+
 def reading1(v1_style, stationary_twin, settings: Settings) -> dict:
     """Reading 1 on the primary pair, from each arm's per-seed daily returns (date x seed).
 
