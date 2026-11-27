@@ -45,12 +45,14 @@ Three questions and their pass/fail rules were written into the [spec](docs/spec
 
 816 out-of-sample days, default costs (45 bps per buy, 55 bps per sell), risk-free rate zero, 95% block-bootstrap intervals:
 
-| Model | Return | Sharpe [95% CI] | Excess return, bps/day [95% CI] | Break-even cost | Trades per seed | Share of days held |
-|---|---|---|---|---|---|---|
-| **Price-level model (headline)** | **−2.5%** | **0.08 [−1.01, 0.99]** | **−4.97 [−12.37, +2.45]** | **None** | **26.8** | **41%** |
-| Returns-based model | +8.8% | 0.23 [−0.90, 1.21] | −6.01 [−13.60, +1.48] | 15 bps | 57.4 | 64% |
+| Model | Return | Sharpe [95% CI] | Excess return, bps/day [95% CI] | Break-even cost | Trades per seed | Share of days held | Max drawdown (benchmark) | Time under water, days (benchmark) |
+|---|---|---|---|---|---|---|---|---|
+| **Price-level model (headline)** | **−2.5%** | **0.08 [−1.01, 0.99]** | **−4.97 [−12.37, +2.45]** | **None** | **26.8** | **41%** | **−22.5% (−21.4%)** | **344, not recovered (469)** |
+| Returns-based model | +8.8% | 0.23 [−0.90, 1.21] | −6.01 [−13.60, +1.48] | 15 bps | 57.4 | 64% | −50.0% (−32.1%) | 494, not recovered (471) |
 
 Break-even is the round-trip cost at which excess return is zero; "None" means the model trails its benchmark even before costs. The returns-based model's 15 bps is far below the roughly 100 bps a real round trip costs.
+
+Drawdown and time under water are given for each model and, in brackets, its exposure-matched benchmark, which pays no costs and so is slightly favoured ([Amendment 7](docs/spec.md#amendment-7-from-1s-comments)). "Not recovered" means the model was still below its earlier peak on the last day. With the same average exposure, the returns-based model fell 50% from its peak against its benchmark's 32%.
 
 The returns-based model's +8.8% against −2.5% is not a ranking. The gap in mean per-seed Sharpe, 0.14, is a quarter of the 0.59 that changing only the random seed produces, so question 1 fails both its tests:
 
@@ -103,6 +105,21 @@ Costs never change a trading decision, so these are recomputed from gross return
 | 100 bps | −2.5% | −4.97 [−12.37, +2.45] | +8.8% | −6.01 [−13.60, +1.48] |
 | 150 bps | −14.7% | −6.61 [−13.99, +0.82] | −18.4% | −9.53 [−17.09, −2.12] |
 | 200 bps | −25.5% | −8.26 [−15.64, −0.81] | −38.8% | −13.05 [−20.62, −5.60] |
+
+</details>
+
+<details>
+<summary><b>Bootstrap block length: 5, 10 or 20 days gives the same answer</b></summary>
+
+The spec set the bootstrap's mean block length to 10 days without recording a reason. Block length cannot move the mean, only the interval's width. The method and the rule that every reading stays on 10 days were fixed before these were computed ([Amendment 7](docs/spec.md#amendment-7-from-1s-comments)).
+
+| Mean block length | Price-level excess, bps/day [95% CI] | Returns-based excess, bps/day [95% CI] |
+|---|---|---|
+| 5 days | −4.97 [−12.60, +2.91] | −6.01 [−13.73, +1.57] |
+| 10 days (used throughout) | −4.97 [−12.37, +2.45] | −6.01 [−13.60, +1.48] |
+| 20 days | −4.97 [−12.23, +2.13] | −6.01 [−13.56, +1.22] |
+
+Every interval includes zero.
 
 </details>
 
