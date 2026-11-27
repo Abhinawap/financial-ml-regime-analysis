@@ -167,9 +167,9 @@ The spec, every setting and the pass/fail rules were committed before the offici
 <details>
 <summary><b>Amendments, deviations and data</b></summary>
 
-**Amendments.** The spec carries six dated amendments, each recorded on [#1](https://github.com/Abhinawap/financial-ml-regime-analysis/issues/1). The first four came before the official outputs were opened: results saved to files, the meta-model fallback, guards on the official run, and two rules for computing the readings. The fifth and sixth came after: presentation changes that put the excess-return plot first on this page ([Amendment 5](docs/spec.md#amendment-5-from-1s-comments)) and give the two models plain names here and in the charts ([Amendment 6](docs/spec.md#amendment-6-from-1s-comments)). **Deviation log:** no deviations. No bug has been found in the official run's code since it ran.
+**Amendments.** The spec carries eight dated amendments, each recorded on [#1](https://github.com/Abhinawap/financial-ml-regime-analysis/issues/1). The first four came before the official outputs were opened: results saved to files, the meta-model fallback, guards on the official run, and two rules for computing the readings. The fifth and sixth came after: presentation changes that put the excess-return plot first on this page ([Amendment 5](docs/spec.md#amendment-5-from-1s-comments)) and give the two models plain names here and in the charts ([Amendment 6](docs/spec.md#amendment-6-from-1s-comments)). The seventh and eighth, also after, add three descriptive figures whose methods were fixed before any of them was computed: drawdown, a bound on the dividend-adjustment look-ahead, and a block-length check ([Amendment 7](docs/spec.md#amendment-7-from-1s-comments)). `scripts/amendment7.py` computes them, so the notebook stays as it ran ([Amendment 8](docs/spec.md#amendment-8-from-1s-comments)). **Deviation log:** no deviations. No bug has been found in the official run's code since it ran.
 
-**Data.** `data/KEEN_2019_2025.csv`, daily, dividend-adjusted, 2019-10-01 to 2025-10-24, 1,465 rows, sha256 `4a90304fa95b3e8adaf736e4876dfd03713585f7599e5d34bcd04a570d27f71d`. Yahoo rewrites adjusted prices after every dividend, so the file is frozen and never re-downloaded. (`results/run.json` records a different hash, `prices_sha256`, which is of the loaded price table rather than the file.)
+**Data.** `data/KEEN_2019_2025.csv`, daily, dividend-adjusted, 2019-10-01 to 2025-10-24, 1,465 rows, sha256 `4a90304fa95b3e8adaf736e4876dfd03713585f7599e5d34bcd04a570d27f71d`. Yahoo rewrites adjusted prices after every dividend, so the file is frozen and never re-downloaded. Adjustment puts a small look-ahead into price levels, bounded under [Limitations](#limitations). (`results/run.json` records a different hash, `prices_sha256`, which is of the loaded price table rather than the file.)
 
 </details>
 
@@ -178,7 +178,7 @@ The spec, every setting and the pass/fail rules were committed before the offici
 - **Low statistical power.** Buy-and-hold's own Sharpe interval is [−0.31, 1.71], so only a large gap between models could be detected.
 - **One illiquid stock.** Capacity is about 1% of KEEN's daily traded value, roughly IDR 10 m on a median day ([liquidity research](docs/research/idx-trading-frictions.md#5-liquidity)). The returns do not scale.
 - **Simple execution model.** Close-to-close fills, with no tick rounding, lot sizes, order of barrier touches within a day, or gap fills.
-- **Adjusted prices.** The data is dividend-adjusted, so its closes are not real traded prices.
+- **Adjusted prices leak future dividends into price levels.** Yahoo adjusts for a dividend by scaling every close before its ex-date down by the dividend's share of the price, so a price level on day t depends on dividends paid after t. Ratios between closes on or before t are scaled only by dividends already paid, so the returns-based model, the labels and the returns are clean. The leak reaches the price-level model and the clustered price-level run. It is small: KEEN paid six dividends in the data, and no adjusted price is more than 5.82% below the real traded price, or 4.14% from the first out-of-sample day on ([dividend research](docs/research/keen-dividends.md)). Look-ahead would normally flatter a model, but a distortion of its features need not help it, so the direction is unknown. The price-level model shows no edge with the leak in place, and nothing was rerun on unadjusted prices. The test uses KEEN because the question is whether the first version's failure on KEEN was a regime change.
 
 <details>
 <summary><b>Six more limitations</b></summary>
@@ -213,6 +213,7 @@ uv sync
 uv run pytest                                      # tests use synthetic prices and development rows only
 uv run jupyter lab notebook/v2_analysis.ipynb      # reads results/, fits no model
 uv run python docs/img/make_charts.py              # rebuilds the README charts from results/
+uv run python -m scripts.amendment7 results        # drawdown and block-length figures
 ```
 
 To rerun the official results from the tagged code:
@@ -230,13 +231,15 @@ Then set `RESULTS = "results-rerun"` at the top of the notebook. `requirements.t
 ```
 backtest/                        trade simulator, walk-forward run, statistics, results command, analysis
 tests/                           tests for each part, on synthetic prices and development rows
-notebook/v2_analysis.ipynb       analysis: every table and figure above
+notebook/v2_analysis.ipynb       analysis: every table and figure above except Amendment 7's
+scripts/amendment7.py            drawdown and block-length figures (Amendment 7)
+scripts/rehearsal.py             full-size run and analysis on synthetic prices
 notebook/trading_strategy_analysis.ipynb   the first version's analysis, unchanged apart from a banner
 results/                         official run outputs and the notebook's headline figure
 docs/img/                        README charts (make_charts.py) and the pipeline diagram
 data/KEEN_2019_2025.csv          frozen price data
 docs/spec.md                     the pre-registered spec (copy of #1, with amendments)
-docs/research/                   IDX trading costs, short-selling rules and liquidity
+docs/research/                   IDX trading costs, short-selling rules, liquidity and KEEN's dividends
 GLOSSARY.md                      the project's terms
 ```
 
