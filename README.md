@@ -7,7 +7,7 @@
 - **What it is.** An XGBoost model decides each day whether to hold KEEN, a small stock on the Indonesia Stock Exchange (IDX), or stay in cash. It is tested walk-forward on 816 trading days (June 2022 to October 2025), net of real IDX trading costs.
 - **Why it was rebuilt.** The project's first version (the [`v1` tag](https://github.com/Abhinawap/financial-ml-regime-analysis/tree/v1), October 2025) reported a Sharpe ratio of 9.59 and blamed its later collapse on a market "regime change". The 9.59 was a count of correct predictions, not a return, and the pipeline leaked future data. This version rewrites the evaluation from scratch.
 - **What it found.** Neither model beats its benchmark: both trail by 5 to 6 basis points a day, with 95% confidence intervals that include zero. With no edge to begin with, there was nothing for a regime change to break.
-- **Why the result can be trusted.** The question, settings and pass/fail rules were committed to git before the official run, the outputs were committed before anyone opened them, and 141 tests run in CI.
+- **Why the result can be trusted.** The question, settings and pass/fail rules were committed to git before the official run, the outputs were committed before anyone opened them, and 142 tests run in CI.
 
 Built with Python 3.12, pandas, scikit-learn, XGBoost and SciPy; walk-forward validation with purged training rows, a trade simulator with IDX costs, and block-bootstrap confidence intervals.
 
