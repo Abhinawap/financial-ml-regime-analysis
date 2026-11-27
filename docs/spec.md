@@ -313,3 +313,10 @@ All readings use the **primary pair** (the v1-style arm against the stationary t
 
 - **README lead figure.** The spec says the README leads with one figure showing the v1-style arm, the stationary twin and the exposure-matched benchmark. The README instead leads with a plot of each run's mean daily excess return and its 95% block-bootstrap interval, because reading 2 is the main finding and that plot shows its statistic directly. The spec's figure follows it, unchanged in content.
 - **The lead plot was designed after the results were read.** It shows the pre-registered excess-return statistic and adds no new analysis.
+
+## Amendment 6 (from #1's comments)
+
+**Amendment, 2026-11-27, after the official run and after its outputs were read.** A presentation change. No reading, rule, setting or number changes.
+
+- **Plain names on the README and charts.** The README, `docs/img/make_charts.py` and the pipeline diagram call the v1-style arm the **price-level model** and the stationary twin the **returns-based model**, "arm" becomes "model", and readings 1 to 3 are presented as three questions. Readers outside the project did not know what "v1", "arm" or "twin" meant. The README names the spec's terms once, so either name leads to the other. The spec, `GLOSSARY.md`, code and notebook keep their terms.
+- **The headline model is still described as v1's features inside the corrected pipeline** (user story 23), never as v1 measured properly.

@@ -106,11 +106,11 @@ Features with price and volume levels as v1 used them: raw OHLCV, raw close lags
 The same features with every level replaced by a scale-free version of itself (ratio to the current close, or to average volume). It keeps relative information but removes the absolute price and volume level.
 
 **v1-style arm**:
-Level form, with the 30 close lags kept outside clustering as v1 did: v1's lag handling inside the corrected pipeline.
+Level form, with the 30 close lags kept outside clustering as v1 did: v1's lag handling inside the corrected pipeline. Called the **price-level model** in the README and charts.
 _Avoid_: v1 (v1 is the original, uncorrected analysis)
 
 **Stationary twin**:
-Stationary form, with its 30 lags kept outside clustering, matching the v1-style arm's pipeline.
+Stationary form, with its 30 lags kept outside clustering, matching the v1-style arm's pipeline. Called the **returns-based model** in the README and charts.
 
 **Primary pair**:
 The v1-style arm against the stationary twin. The only gated comparison: it tests whether v1's raw price levels caused its failure.

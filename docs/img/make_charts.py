@@ -40,9 +40,9 @@ def save(fig, path):
 
 
 def excess_ci(series, trades, settings, source, out):
-    runs = {"v1_style": "v1-style arm (headline)", "stationary_twin": "Stationary twin",
-            "v1_style_meta": "v1-style + meta", "stationary_twin_meta": "Stationary twin + meta",
-            "clustered_level": "Clustered level", "clustered_stationary": "Clustered stationary",
+    runs = {"v1_style": "Price-level model", "stationary_twin": "Returns-based model",
+            "v1_style_meta": "Price-level + meta", "stationary_twin_meta": "Returns-based + meta",
+            "clustered_level": "Clustered price-level", "clustered_stationary": "Clustered returns-based",
             "momentum": "Momentum baseline", "mean_reversion": "Mean-reversion baseline"}
     # Buy-and-hold is left out: its excess return only reflects scaling by its 815/816 average position.
     fig, ax = plt.subplots(figsize=(8.8, 5.2))
@@ -72,7 +72,7 @@ def excess_ci(series, trades, settings, source, out):
     start, end = series.date.min().date(), series.date.max().date()
     titles(fig, "No run's excess return is clearly above zero",
            f"Mean daily return minus the exposure-matched benchmark's, default costs, {start} to {end}.\n"
-           "Primary pair in blue (filled); every interval includes zero or lies below it.", source)
+           "The two main models in blue (filled); every interval includes zero or lies below it.", source)
     save(fig, out / "excess_ci.svg")
 
 
@@ -80,20 +80,20 @@ def headline(series, trades, settings, source, out):
     fig, ax = plt.subplots(figsize=(8.8, 5.0))
     fig.subplots_adjust(left=0.08, right=0.76, top=0.80, bottom=0.12)
     ends, low = [], 1.0
-    for run, label, color, lw in [("v1_style", "v1-style arm", ACCENT, 2.2), ("stationary_twin", "Stationary twin", TEXT, 1.6)]:
+    for run, short, color, lw in [("v1_style", "Price-level", ACCENT, 2.2), ("stationary_twin", "Returns-based", TEXT, 1.6)]:
         r = a.per_seed(series, trades, run, settings).mean(axis=1)
         matched = (1 + exposure_matched_benchmark(a.benchmark(series), a.position(series, run))).cumprod()
         equity = (1 + r).cumprod()
         ax.plot(equity, color=color, lw=lw)
         ax.plot(matched, color=color, lw=1.1, ls=(0, (4, 3)), alpha=0.55)
-        ends += [(equity.iloc[-1], label, color), (matched.iloc[-1], f"{label}'s benchmark", color)]
+        ends += [(equity.iloc[-1], f"{short} model", color), (matched.iloc[-1], f"{short} benchmark", color)]
         low = min(low, equity.min(), matched.min())
     bottom = math.floor(low * 10) / 10  # 0.8 on the official outputs
     ax.set_ylim(bottom, None)
     x, placed = series.date.max() + pd.DateOffset(days=14), []
     for y, label, color in sorted(ends):  # direct labels at line ends, pushed apart where they would collide
         placed.append(max(y, placed[-1] + 0.09) if placed else y)
-        ax.text(x, placed[-1], f"{label}  {y - 1:+.1%}".replace("-", "\u2212"), va="center", fontsize=9.5, color=color,
+        ax.text(x, placed[-1], f"{label}  " + f"{y - 1:+.1%}".replace("-", "\u2212"), va="center", fontsize=9.5, color=color,
                 clip_on=False)
     boundary = settings.reading3_boundary
     ax.axvline(boundary, color=CONTEXT, lw=1, ls=(0, (2, 2)))
@@ -105,9 +105,9 @@ def headline(series, trades, settings, source, out):
     ax.grid(axis="y", color=GRID, lw=0.8)
     ax.set_axisbelow(True)
     start, end = series.date.min().date(), series.date.max().date()
-    titles(fig, "Neither arm keeps pace with its exposure-matched benchmark",
+    titles(fig, "Neither model keeps pace with its exposure-matched benchmark",
            f"Seed-averaged out-of-sample equity, default costs, {start} to {end}.\n"
-           "Dashed: buy-and-hold scaled by each arm's average position, no costs.", source)
+           "Dashed: buy-and-hold scaled by each model's average time in the stock, no costs.", source)
     save(fig, out / "headline.svg")
 
 
