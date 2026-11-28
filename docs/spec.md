@@ -333,3 +333,9 @@ All readings use the **primary pair** (the v1-style arm against the stationary t
 ## Amendment 8 (from #1's comments)
 
 **Amendment, 2026-11-27, after the official run and after its outputs were read.** Amendment 7's figures are computed by `scripts/amendment7.py` from the saved results files, not by the notebook, so the notebook stays as it ran on the official outputs. Where Amendment 7 says the notebook stops if the 10-day row does not reproduce the headline intervals, that script stops instead. Nothing else changes.
+
+## Amendment 9 (from #1's comments)
+
+**Amendment, 2026-11-28, after the official run and after its outputs were read.** Records a wording change made to the spec copy on 2026-11-26, before the official run, in commit 38e1143. No feature, rule, setting or number changes.
+
+- **The feature universe is 66 columns.** The spec's feature-universe line reads: "v1's 36 technical indicators (31 computed indicators plus raw OHLCV, as v1 counted them) and 30 close lags: 66 columns." The earlier wording, "raw OHLCV, the 36 technical indicators, and 30 close lags", reads as 71 columns, because v1 counted OHLCV among its 36. The code, `GLOSSARY.md` and the official run have always used 66.
